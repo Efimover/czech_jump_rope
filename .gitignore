@@ -1,0 +1,38 @@
+# === Node.js ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# === Build výstupy ===
+dist/
+build/
+.cache/
+out/
+coverage/
+
+# === Prostředí ===
+.env
+.env.local
+.env.*.local
+
+# === Docker ===
+*.pid
+*.log
+docker-data/
+volumes/
+tmp/
+
+# === IDE ===
+.idea/
+.vscode/
+.DS_Store
+
+# === Frontend ===
+frontend/node_modules/
+frontend/dist/
+
+# === Backend ===
+backend/node_modules/
+backend/dist/
