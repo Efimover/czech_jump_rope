@@ -1,11 +1,12 @@
-# === Frontend Dockerfile ===
+# === Build stage ===
 FROM node:20-alpine AS build
-
 WORKDIR /app
 
-# závislosti a sestav React app
+# Nainstaluj všechny závislosti včetně devDependencies
 COPY package*.json ./
 RUN npm install
+
+# Zkopíruj zdrojové soubory a vytvoř produkční build
 COPY . .
 RUN npm run build
 
@@ -13,14 +14,12 @@ RUN npm run build
 FROM node:20-alpine
 WORKDIR /app
 
-# Zkopíruj build z předchozího stage
+# Nainstaluj jednoduchý static server
+RUN npm install -g serve
+
+# Zkopíruj hotový build z předchozí fáze
 COPY --from=build /app/dist ./dist
-COPY package*.json ./
 
-
-RUN npm install --omit=dev
-
+# Nastav port a spusť statický server
 EXPOSE 5173
-
-# Spusť produkční server (vite preview)
-CMD ["npm", "run", "preview"]
+CMD ["serve", "-s", "dist", "-l", "5173"]
