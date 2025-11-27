@@ -6,11 +6,11 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
-# Zkopíruj zdrojové soubory a vytvoř produkční build
+# Zkopíruj zbytek projektu a vytvoř produkční build
 COPY . .
 RUN npm run build
 
-# === Production stage ===
+# === Runtime stage ===
 FROM node:20-alpine
 WORKDIR /app
 
@@ -20,6 +20,6 @@ RUN npm install -g serve
 # Zkopíruj hotový build z předchozí fáze
 COPY --from=build /app/dist ./dist
 
-# Nastav port a spusť statický server
+# Nastav port a spusť server
 EXPOSE 5173
 CMD ["serve", "-s", "dist", "-l", "5173"]
