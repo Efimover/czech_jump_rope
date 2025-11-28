@@ -7,5 +7,8 @@ RUN npm install
 
 COPY . .
 
+# Nastav port
 EXPOSE 3000
-CMD ["npm", "run", "dev"]
+
+# Spusť aplikaci
+CMD ["npm", "run", "start"]
