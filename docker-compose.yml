@@ -17,7 +17,7 @@ services:
     build: ./frontend
     container_name: cjr-frontend
     ports:
-      - "5173:5173"
+      - "5174:5173"
     environment:
       - VITE_API_URL=http://cjr-backend:3000/api
     depends_on:
