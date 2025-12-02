@@ -1,5 +1,6 @@
 // controllers/ageCategoryController.js
 import { ageCategoryService } from "../services/ageCategoryService.js";
+import {pool} from "../db/index.js";
 
 export const getAgeCategories = async (req, res) => {
     try {

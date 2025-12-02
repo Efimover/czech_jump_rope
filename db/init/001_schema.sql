@@ -22,6 +22,13 @@ CREATE TABLE "role" (
                         name      VARCHAR(50) UNIQUE NOT NULL
 
 );
+INSERT INTO role (name) VALUES
+                            ('admin'),
+                            ('organizator'),
+                            ('soutezici'),
+                            ('user'),
+                            ('rozhodci')
+ON CONFLICT DO NOTHING;
 
 -- many-to-many uživatel <-> role
 CREATE TABLE "role_user" (

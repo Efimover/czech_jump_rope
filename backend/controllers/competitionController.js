@@ -1,3 +1,5 @@
+
+
 export const getAllCompetitions = async (req, res) => {
     try {
         const competitions = await prisma.competition.findMany();

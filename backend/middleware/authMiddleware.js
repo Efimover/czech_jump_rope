@@ -13,9 +13,8 @@ export const verifyToken = async (req, res, next) => {
         const token = header.split(" ")[1];
 
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const userId = decoded.userId;
+        const userId = decoded.user_id;
 
-        // ověř, že user existuje
         const userResult = await pool.query(
             `SELECT user_id, email FROM user_account WHERE user_id = $1`,
             [userId]
@@ -25,21 +24,18 @@ export const verifyToken = async (req, res, next) => {
             return res.status(401).json({ error: "Unauthorized: user not found" });
         }
 
-        // načti role uživatele
         const rolesResult = await pool.query(
             `SELECT r.name
              FROM role_user ru
-             JOIN role r ON ru.role_id = r.role_id
+                      JOIN role r ON ru.role_id = r.role_id
              WHERE ru.user_id = $1`,
             [userId]
         );
 
-        const roles = rolesResult.rows.map(r => r.name);
-
         req.user = {
             id: userId,
             email: userResult.rows[0].email,
-            roles,
+            roles: rolesResult.rows.map(r => r.name)
         };
 
         next();

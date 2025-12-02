@@ -33,6 +33,11 @@ export const registerUser = async (req, res) => {
         );
 
         const user = result.rows[0];
+        await pool.query(
+            `INSERT INTO role_user (user_id, role_id)
+     SELECT $1, role_id FROM role WHERE name = 'user'`,
+            [user.user_id]
+        );
 
         res.status(201).json({
             message: "User registered successfully.",
@@ -104,3 +109,84 @@ export const getProfile = async (req, res) => {
         res.status(500).json({ message: "Server error." });
     }
 };
+
+export const assignRole = async (req, res) => {
+    try {
+        const { id } = req.params;      // user_id
+        const { role } = req.body;      // name role
+
+        // zjisti role_id
+        const roleResult = await pool.query(
+            `SELECT role_id FROM role WHERE name = $1`,
+            [role]
+        );
+
+        if (roleResult.rowCount === 0) {
+            return res.status(400).json({ error: "Role not found" });
+        }
+
+        const roleId = roleResult.rows[0].role_id;
+
+        // vlož do role_user
+        await pool.query(
+            `INSERT INTO role_user (user_id, role_id)
+             VALUES ($1, $2)
+             ON CONFLICT DO NOTHING`,
+            [id, roleId]
+        );
+
+        res.json({ message: `Role '${role}' assigned to user ${id}` });
+
+    } catch (err) {
+        console.error("assignRole error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};
+
+
+export const getUsers = async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT user_id, email, first_name, last_name, created_at FROM user_account`
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to load users" });
+    }
+};
+
+export const getUser = async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        const result = await pool.query(
+            `SELECT user_id, email, first_name, last_name, created_at 
+       FROM user_account WHERE user_id = $1`,
+            [id]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to load user" });
+    }
+};
+
+export const deleteUser = async (req, res) => {
+    try {
+        const id = req.params.id;
+
+        await pool.query(`DELETE FROM user_account WHERE user_id = $1`, [id]);
+
+        res.json({ message: "User deleted" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: "Failed to delete user" });
+    }
+};
+

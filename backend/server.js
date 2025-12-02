@@ -1,5 +1,5 @@
 import dotenv from "dotenv";
-dotenv.config();
+dotenv.config({ path: "/app/.env" });
 
 import app from "./app.js";
 
