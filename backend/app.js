@@ -14,6 +14,7 @@ app.use(express.json());
 
 
 app.use("/api/users", userRoutes);
+app.use("/api/auth", userRoutes);
 app.use("/api/competitions", competitionRoutes);
 app.use("/api/disciplines", disciplineRoutes);
 app.use("/api/age-categories", ageCategoryRoutes);

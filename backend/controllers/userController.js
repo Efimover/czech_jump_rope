@@ -33,11 +33,18 @@ export const registerUser = async (req, res) => {
         );
 
         const user = result.rows[0];
-        await pool.query(
-            `INSERT INTO role_user (user_id, role_id)
-     SELECT $1, role_id FROM role WHERE name = 'user'`,
-            [user.user_id]
+        const role = await pool.query(
+            `SELECT role_id FROM role WHERE name = 'user'`
         );
+
+        if (role.rowCount === 0) {
+            console.error("Role 'user' does not exist!");
+        } else {
+            await pool.query(
+                `INSERT INTO role_user (user_id, role_id) VALUES ($1, $2)`,
+                [user.user_id, role.rows[0].role_id]
+            );
+        }
 
         res.status(201).json({
             message: "User registered successfully.",
