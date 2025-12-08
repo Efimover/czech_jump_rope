@@ -25,7 +25,9 @@ export default function Register() {
             await register(form);
             navigate("/login");
         } catch (err) {
-            setError("Email is already taken");
+            // pokud server vrátil message, zobraz ho
+            const msg = err?.response?.data?.message || err?.response?.data?.error || "Registration failed";
+            setError(msg);
         }
     };
 

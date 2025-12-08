@@ -8,13 +8,14 @@ import {
     getUsers,
     deleteUser
 } from "../controllers/userController.js";
+import { validateRegister } from "../middleware/validateRegister.js";
 import {verifyToken} from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
 
 const router = express.Router();
 
 // Public
-router.post("/register", registerUser);
+router.post("/register", validateRegister, registerUser);
 router.post("/login", loginUser);
 
 // Protected
