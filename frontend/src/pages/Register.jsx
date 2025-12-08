@@ -1,5 +1,5 @@
-
 import React, { useState, useContext } from "react";
+import "../styles/auth.css";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
@@ -32,48 +32,57 @@ export default function Register() {
     };
 
     return (
-        <div className="container">
-            <h2>Registrace</h2>
+        <div className="auth-container">
+            <div className="auth-card">
+                <h2 className="auth-title">Registrace</h2>
 
-            <form onSubmit={handleSubmit}>
-                <input
-                    placeholder="Jméno"
-                    value={form.first_name}
-                    onChange={(e) => setForm({ ...form, first_name: e.target.value })}
-                />
+                <form onSubmit={handleSubmit} className="auth-form">
+                    <input
+                        placeholder="Jméno"
+                        value={form.first_name}
+                        onChange={(e) => setForm({ ...form, first_name: e.target.value })}
+                    />
 
-                <input
-                    placeholder="Příjmení"
-                    value={form.last_name}
-                    onChange={(e) => setForm({ ...form, last_name: e.target.value })}
-                />
+                    <input
+                        placeholder="Příjmení"
+                        value={form.last_name}
+                        onChange={(e) => setForm({ ...form, last_name: e.target.value })}
+                    />
 
-                <input
-                    type="email"
-                    placeholder="Email"
-                    value={form.email}
-                    onChange={(e) => setForm({ ...form, email: e.target.value })}
-                    required
-                />
+                    <input
+                        type="email"
+                        placeholder="Email"
+                        value={form.email}
+                        onChange={(e) => setForm({ ...form, email: e.target.value })}
+                        required
+                    />
 
-                <input
-                    type="password"
-                    placeholder="Heslo"
-                    value={form.password}
-                    onChange={(e) => setForm({ ...form, password: e.target.value })}
-                    required
-                />
+                    <input
+                        type="password"
+                        placeholder="Heslo"
+                        value={form.password}
+                        onChange={(e) => setForm({ ...form, password: e.target.value })}
+                        required
+                    />
 
-                <input
-                    type="date"
-                    value={form.date_birth}
-                    onChange={(e) => setForm({ ...form, date_birth: e.target.value })}
-                />
+                    <input
+                        type="date"
+                        value={form.date_birth}
+                        onChange={(e) => setForm({ ...form, date_birth: e.target.value })}
+                    />
 
-                {error && <p style={{ color: "red" }}>{error}</p>}
+                    {error && <p className="auth-error">{error}</p>}
 
-                <button type="submit">Registrovat</button>
-            </form>
+                    <button type="submit" className="auth-button">Registrovat</button>
+                </form>
+
+                <p className="auth-footer">
+                    Máte účet? <a href="/login">Přihlásit</a>
+                </p>
+            </div>
         </div>
     );
+
+
+
 }

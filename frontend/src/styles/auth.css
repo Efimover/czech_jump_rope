@@ -1,0 +1,97 @@
+/* === Container === */
+.auth-container {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: #f7f9fc;
+    padding: 20px;
+}
+
+/* === Card === */
+.auth-card {
+    background: #ffffff;
+    width: 100%;
+    max-width: 420px;
+    padding: 35px 40px;
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 60, 120, 0.08);
+    text-align: center;
+}
+
+/* === Titles === */
+.auth-title {
+    font-size: 26px;
+    font-weight: bold;
+    color: #003f88;
+    margin-bottom: 6px;
+}
+
+.auth-subtitle {
+    font-size: 14px;
+    color: #6f7a85;
+    margin-bottom: 25px;
+}
+
+/* === Form === */
+.auth-form input {
+    width: 100%;
+    padding: 12px 14px;
+    margin-bottom: 14px;
+    font-size: 15px;
+    border-radius: 8px;
+    border: 1px solid #d7dce3;
+    transition: 0.2s;
+}
+
+.auth-form input:focus {
+    border-color: #0058c9;
+    box-shadow: 0 0 0 2px rgba(0, 103, 200, 0.15);
+    outline: none;
+}
+
+/* Two-column row */
+.form-row {
+    display: flex;
+    gap: 10px;
+}
+
+/* === Button === */
+.auth-button {
+    width: 100%;
+    padding: 12px;
+    background: #0058c9;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 16px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.auth-button:hover {
+    background: #0047a5;
+}
+
+/* === Footer === */
+.auth-footer {
+    margin-top: 18px;
+    font-size: 14px;
+    color: #6f7a85;
+}
+
+.auth-footer a {
+    color: #0058c9;
+    text-decoration: none;
+}
+
+.auth-footer a:hover {
+    text-decoration: underline;
+}
+
+/* === Error === */
+.auth-error {
+    color: #d40000;
+    margin-bottom: 12px;
+    font-size: 14px;
+}
