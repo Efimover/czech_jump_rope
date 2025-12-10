@@ -45,4 +45,21 @@ router.post(
     }
 );
 
+router.get("/", async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT * 
+            FROM competition
+            ORDER BY start_date ASC
+        `);
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error("ERROR loading competitions:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+
+
 export default router;
