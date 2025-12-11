@@ -37,10 +37,13 @@ export const verifyToken = async (req, res, next) => {
             email: userResult.rows[0].email,
             roles: rolesResult.rows.map(r => r.name)
         };
+        console.log("Roles found for user", userId, ":", rolesResult.rows);
 
         next();
     } catch (err) {
         console.error("verifyToken error:", err);
         return res.status(401).json({ error: "Unauthorized: invalid token" });
+
     }
+
 };

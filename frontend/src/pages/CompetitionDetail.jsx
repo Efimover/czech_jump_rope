@@ -114,9 +114,8 @@ export default function CompetitionDetail() {
                     ) : (
                         <button
                             className="hero-button"
-                            onClick={() =>
-                                navigate(`/registrations/new?competition=${competition.competition_id}`)
-                            }
+                            onClick={() => navigate(`/registrations/start?competition=${competition.competition_id}`)}
+
                         >
                             Přihlásit se do soutěže
                         </button>

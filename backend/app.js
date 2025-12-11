@@ -20,4 +20,5 @@ app.use("/api/disciplines", disciplineRoutes);
 app.use("/api/age-categories", ageCategoryRoutes);
 app.use("/api/registrations", registrationRoutes);
 
+
 export default app;

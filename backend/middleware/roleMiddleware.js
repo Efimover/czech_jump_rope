@@ -1,13 +1,13 @@
-export const requireRole = (roleName) => {
+export const requireRole = (...allowedRoles) => {
     return (req, res, next) => {
-        if (!req.user) {
-            return res.status(401).json({ error: "Unauthorized" });
-        }
+        const userRoles = req.user.roles || [];
 
-        if (!req.user.roles.includes(roleName)) {
-            return res.status(403).json({
-                error: `Forbidden: requires role '${roleName}'`
-            });
+        const hasRole = userRoles.some(role =>
+            allowedRoles.includes(role)
+        );
+
+        if (!hasRole) {
+            return res.status(403).json({ error: "Forbidden — insufficient role" });
         }
 
         next();

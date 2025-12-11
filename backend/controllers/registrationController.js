@@ -4,7 +4,10 @@ export const getRegistration = async (req, res) => {
         const { registration_id } = req.params;
 
         const reg = await pool.query(
-            `SELECT * FROM registration WHERE registration_id = $1`,
+            `SELECT r.*, c.name AS competition_name
+     FROM registration r
+     JOIN competition c ON c.competition_id = r.competition_id
+     WHERE r.registration_id = $1`,
             [registration_id]
         );
 
@@ -25,7 +28,7 @@ export const createRegistration = async (req, res) => {
         const { competition_id, contact_name, contact_email } = req.body;
         const userId = req.user.id;
 
-        // 1️⃣ Zkontroluj existující přihlášku
+        // 1️⃣ Už existuje přihláška?
         const existing = await pool.query(
             `SELECT registration_id
              FROM registration
@@ -34,28 +37,35 @@ export const createRegistration = async (req, res) => {
         );
 
         if (existing.rowCount > 0) {
-            return res.status(400).json({
-                error: "Registration already exists for this competition",
+            return res.status(409).json({
+                status: "error",
+                message: "Přihláška již existuje pro tuto soutěž.",
                 registration_id: existing.rows[0].registration_id
             });
         }
 
-        // 2️⃣ Soutěž existuje?
+        // 2️⃣ Kontrola existence soutěže
         const comp = await pool.query(
             `SELECT reg_start, reg_end FROM competition WHERE competition_id = $1`,
             [competition_id]
         );
 
         if (comp.rowCount === 0) {
-            return res.status(404).json({ error: "Competition not found" });
+            return res.status(404).json({
+                status: "error",
+                message: "Soutěž nebyla nalezena."
+            });
         }
 
         const { reg_start, reg_end } = comp.rows[0];
         const today = new Date();
 
-        // 3️⃣ Registrace otevřená?
+        // 3️⃣ Přihlašování povoleno?
         if (today < new Date(reg_start) || today > new Date(reg_end)) {
-            return res.status(400).json({ error: "Registration period is closed" });
+            return res.status(400).json({
+                status: "error",
+                message: "Registrace do soutěže není aktuálně otevřena."
+            });
         }
 
         // 4️⃣ Vytvoření přihlášky
@@ -66,13 +76,17 @@ export const createRegistration = async (req, res) => {
             [competition_id, userId, contact_name, contact_email]
         );
 
-        res.status(201).json({
-            message: "Registration created",
+        return res.status(201).json({
+            status: "success",
+            message: "Přihláška vytvořena.",
             registration: result.rows[0]
         });
 
     } catch (err) {
         console.error("Create registration error:", err);
-        res.status(500).json({ error: "Server error" });
+        return res.status(500).json({
+            status: "error",
+            message: "Došlo k chybě serveru. Zkuste to prosím znovu."
+        });
     }
 };
