@@ -9,3 +9,7 @@ export async function getCompetition(id) {
     const res = await fetch(`${API_URL}/competitions/${id}`);
     return res.json();
 }
+export async function getCompetitionDisciplines(competitionId) {
+    const res = await fetch(`${API_URL}/disciplines/competition/${competitionId}`);
+    return res.json();
+}

@@ -100,13 +100,22 @@ export const getDisciplinesByCompetition = async (req, res) => {
     try {
         const result = await pool.query(
             `
-            SELECT d.*, 
-                   json_agg(ac.age_category_id) AS age_categories
-            FROM competition_discipline cd
-            JOIN discipline d ON d.discipline_id = cd.discipline_id
-            LEFT JOIN discipline_age_category ac ON ac.discipline_id = d.discipline_id
-            WHERE cd.competition_id = $1
-            GROUP BY d.discipline_id
+                SELECT
+                    d.discipline_id,
+                    d.name,
+                    d.type,
+                    d.pocet_athletes,
+                    d.is_team,
+                    COALESCE(
+                                    json_agg(ac.name) FILTER (WHERE ac.name IS NOT NULL),
+                                    '[]'
+                    ) AS age_categories
+                FROM competition_discipline cd
+                         JOIN discipline d ON d.discipline_id = cd.discipline_id
+                         LEFT JOIN discipline_age_category dac ON dac.discipline_id = d.discipline_id
+                         LEFT JOIN age_category ac ON ac.age_category_id = dac.age_category_id
+                WHERE cd.competition_id = $1
+                GROUP BY d.discipline_id
             `,
             [competitionId]
         );

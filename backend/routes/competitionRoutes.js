@@ -18,20 +18,21 @@ router.post(
                 start_date,
                 end_date,
                 reg_start,
-                reg_end
+                reg_end,
+                location
             } = req.body;
 
-            const owner_id = req.user.id; // JISTOTA – z tokenu
+            const owner_id = req.user.id; // z tokenu
 
             const result = await pool.query(
                 `
                 INSERT INTO competition (
-                    owner_id, name, description, start_date, end_date, reg_start, reg_end
+                    owner_id, name, description, start_date, end_date, reg_start, reg_end,location
                 )
-                VALUES ($1, $2, $3, $4, $5, $6, $7)
+                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
                 RETURNING *
                 `,
-                [owner_id, name, description, start_date, end_date, reg_start, reg_end]
+                [owner_id, name, description, start_date, end_date, reg_start, reg_end, location]
             );
 
             return res.status(201).json({
@@ -48,9 +49,14 @@ router.post(
 router.get("/", async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT * 
-            FROM competition
-            ORDER BY start_date ASC
+            SELECT
+                c.*,
+                u.first_name AS owner_first_name,
+                u.last_name AS owner_last_name,
+                u.email AS owner_email
+            FROM competition c
+                     JOIN user_account u ON u.user_id = c.owner_id
+            ORDER BY c.start_date ASC
         `);
 
         res.json(result.rows);
@@ -59,6 +65,31 @@ router.get("/", async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+
+router.get("/:id", async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT 
+                c.*,
+                u.first_name AS owner_first_name,
+                u.last_name AS owner_last_name,
+                u.email AS owner_email
+            FROM competition c
+            JOIN user_account u ON u.user_id = c.owner_id
+            WHERE c.competition_id = $1
+        `, [req.params.id]);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({ error: "Competition not found" });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("ERROR loading competition:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
 
 
 

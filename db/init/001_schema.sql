@@ -49,7 +49,8 @@ CREATE TABLE competition (
 
                              reg_start      DATE NOT NULL,
                              reg_end        DATE NOT NULL,
-                             created_at     TIMESTAMP WITH TIME ZONE DEFAULT now()
+                             created_at     TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                             location VARCHAR(255)
 );
 
 CREATE TABLE age_category (
@@ -68,6 +69,8 @@ CREATE TABLE discipline (
                             is_team        BOOLEAN DEFAULT FALSE,
                             type VARCHAR(20),
                             created_at     TIMESTAMP WITH TIME ZONE DEFAULT now()
+
+
 );
 
 CREATE TABLE discipline_age_category (
