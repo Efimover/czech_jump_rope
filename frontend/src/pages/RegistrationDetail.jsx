@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import "../styles/registrationDetail.css";
@@ -8,20 +8,35 @@ export default function RegistrationDetail() {
     const navigate = useNavigate();
 
     const [registration, setRegistration] = useState(null);
+    const [athletes, setAthletes] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        api.get(`/registrations/${id}`)
-            .then((res) => {
-                setRegistration(res.data);
-                setLoading(false);
-            })
-            .catch((err) => {
-                console.error(err);
-                alert("Nepodařilo se načíst přihlášku.");
-                navigate("/");
-            });
+        loadRegistration();
+        loadAthletes();
     }, [id]);
+
+    async function loadRegistration() {
+        try {
+            const res = await api.get(`/registrations/${id}`);
+            setRegistration(res.data);
+        } catch (err) {
+            console.error(err);
+            alert("Nepodařilo se načíst přihlášku.");
+            navigate("/");
+        } finally {
+            setLoading(false);
+        }
+    }
+
+    async function loadAthletes() {
+        try {
+            const res = await api.get(`/athletes/by-registration/${id}`);
+            setAthletes(res.data);
+        } catch (err) {
+            console.error("Error loading athletes", err);
+        }
+    }
 
     if (loading) return <p className="loading">Načítám přihlášku...</p>;
     if (!registration) return null;
@@ -40,6 +55,7 @@ export default function RegistrationDetail() {
 
                 <div className="reg-meta">
                     <span>Přihláška #{registration.registration_id}</span>
+
                     <span className={`status ${registration.status}`}>
                         {registration.status}
                     </span>
@@ -50,7 +66,6 @@ export default function RegistrationDetail() {
                     <p><strong>Upraveno:</strong> {registration.updated_at?.slice(0, 10)}</p>
                 </div>
             </div>
-
 
             {/* ZÁKLADNÍ ÚDAJE */}
             <div className="section-card">
@@ -66,7 +81,6 @@ export default function RegistrationDetail() {
                     <span>{registration.contact_email}</span>
                 </div>
 
-                {/* Upravit pouze pokud není odesláno */}
                 {registration.status !== "submitted" && (
                     <button className="btn-outline">
                         Upravit údaje
@@ -74,18 +88,44 @@ export default function RegistrationDetail() {
                 )}
             </div>
 
-
-            {/* DISCIPLÍNY */}
+            {/* ZÁVODNÍCI */}
             <div className="section-card">
-                <h2>Disciplíny</h2>
+                <h2>Závodníci</h2>
 
-                <p className="placeholder">Zatím žádné disciplíny nepřidané.</p>
+                {athletes.length === 0 && (
+                    <p className="placeholder">Zatím nebyl přidán žádný závodník.</p>
+                )}
+
+                {athletes.map((a) => (
+                    <div key={a.athlete_id} className="athlete-card">
+                        <strong>{a.first_name} {a.last_name}</strong>
+                        <p>Rok narození: {a.birth_year}</p>
+                        <p>Pohlaví: {a.gender}</p>
+
+                        <div className="athlete-disciplines">
+                            {a.disciplines?.length > 0 ? (
+                                a.disciplines.map((d) => (
+                                    <span key={d.discipline_id} className="disc-tag">
+                                        {d.name}
+                                    </span>
+                                ))
+                            ) : (
+                                <p className="placeholder">Bez disciplín</p>
+                            )}
+                        </div>
+                    </div>
+                ))}
 
                 {registration.status !== "submitted" && (
-                    <button className="btn-primary">Přidat disciplínu</button>
+                    <button
+                        className="btn-primary"
+                        onClick={() => navigate(`/registrations/${id}/athletes/new`)}
+                    >
+                        ➕ Přidat závodníka
+                    </button>
                 )}
+                <p className="placeholder">Zatim nemas zadne zavodniky</p>
             </div>
-
         </div>
     );
 }

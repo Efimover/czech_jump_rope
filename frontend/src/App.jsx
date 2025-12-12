@@ -9,11 +9,13 @@ import CompetitionDetail from "./pages/CompetitionDetail.jsx";
 
 import RegistrationStart from "./pages/RegistrationStart.jsx";
 import RegistrationDetail from "./pages/RegistrationDetail.jsx";
+import AthleteAdd from "./pages/AthleteAdd.jsx";
 
 export default function App() {
     return (
         <BrowserRouter>
             <Routes>
+                {/* Home */}
                 <Route path="/" element={<Homepage />} />
 
                 {/* Auth */}
@@ -23,11 +25,17 @@ export default function App() {
                 {/* Soutěže */}
                 <Route path="/competitions/:id" element={<CompetitionDetail />} />
 
-                {/* Nové vytváření přihlášky  */}
+                {/* Spuštění registrace */}
                 <Route path="/registrations/start" element={<RegistrationStart />} />
 
                 {/* Detail přihlášky */}
                 <Route path="/registrations/:id" element={<RegistrationDetail />} />
+
+                {/* Přidání závodníka do přihlášky */}
+                <Route
+                    path="/registrations/:registrationId/athletes/new"
+                    element={<AthleteAdd />}
+                />
             </Routes>
         </BrowserRouter>
     );

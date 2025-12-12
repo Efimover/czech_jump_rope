@@ -6,6 +6,7 @@ import userRoutes from "./routes/userRoutes.js";
 import disciplineRoutes from "./routes/disciplineRoutes.js";
 import ageCategoryRoutes from "./routes/ageCategoryRoutes.js";
 import registrationRoutes from "./routes/registrationRoutes.js";
+import athleteRoutes from "./routes/athleteRoutes.js";
 
 const app = express();
 
@@ -19,6 +20,7 @@ app.use("/api/competitions", competitionRoutes);
 app.use("/api/disciplines", disciplineRoutes);
 app.use("/api/age-categories", ageCategoryRoutes);
 app.use("/api/registrations", registrationRoutes);
+app.use("/api/athletes", athleteRoutes);
 
 
 export default app;
