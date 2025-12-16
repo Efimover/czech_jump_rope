@@ -26,7 +26,9 @@ export default function RegistrationCreate() {
 
             try {
                 // 1️⃣ Zkontrolovat, zda už existuje přihláška
-                const check = await api.get(`/registrations/check/${competition_id}`);
+                const check = await api.get(`/registrations/check`, {
+                    params: { competition_id }
+                });
 
                 if (check.data.exists) {
                     // 2️⃣ Přihláška existuje → přesměrovat

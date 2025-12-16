@@ -31,9 +31,8 @@ export default function App() {
                 {/* Detail přihlášky */}
                 <Route path="/registrations/:id" element={<RegistrationDetail />} />
 
-                {/* Přidání závodníka do přihlášky */}
                 <Route
-                    path="/registrations/:registrationId/athletes/new"
+                    path="/teams/:teamId/athletes/new"
                     element={<AthleteAdd />}
                 />
             </Routes>

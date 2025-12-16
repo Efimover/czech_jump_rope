@@ -8,14 +8,34 @@ export default function RegistrationDetail() {
     const navigate = useNavigate();
 
     const [registration, setRegistration] = useState(null);
-    const [athletes, setAthletes] = useState([]);
+    const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         loadRegistration();
-        loadAthletes();
+        loadTeamsWithAthletes();
     }, [id]);
 
+    async function loadTeams() {
+        const res = await api.get(`/teams/by-registration/${id}`);
+        setTeams(res.data);
+    }
+
+    async function loadTeamsWithAthletes() {
+        const teamsRes = await api.get(`/teams/by-registration/${id}`);
+
+        const teamsWithAthletes = await Promise.all(
+            teamsRes.data.map(async team => {
+                const athletesRes = await api.get(`/athletes/by-team/${team.team_id}`);
+                return {
+                    ...team,
+                    athletes: athletesRes.data
+                };
+            })
+        );
+
+        setTeams(teamsWithAthletes);
+    }
     async function loadRegistration() {
         try {
             const res = await api.get(`/registrations/${id}`);
@@ -29,14 +49,6 @@ export default function RegistrationDetail() {
         }
     }
 
-    async function loadAthletes() {
-        try {
-            const res = await api.get(`/athletes/by-registration/${id}`);
-            setAthletes(res.data);
-        } catch (err) {
-            console.error("Error loading athletes", err);
-        }
-    }
 
     if (loading) return <p className="loading">Načítám přihlášku...</p>;
     if (!registration) return null;
@@ -92,40 +104,46 @@ export default function RegistrationDetail() {
             <div className="section-card">
                 <h2>Závodníci</h2>
 
-                {athletes.length === 0 && (
-                    <p className="placeholder">Zatím nebyl přidán žádný závodník.</p>
+                {teams.length === 0 && (
+                    <p className="placeholder">Zatím nebyl vytvořen žádný tým.</p>
                 )}
 
-                {athletes.map((a) => (
-                    <div key={a.athlete_id} className="athlete-card">
-                        <strong>{a.first_name} {a.last_name}</strong>
-                        <p>Rok narození: {a.birth_year}</p>
-                        <p>Pohlaví: {a.gender}</p>
+                {teams.map(team => (
+                    <div key={team.team_id} className="team-card">
+                        <h3>{team.name}</h3>
 
-                        <div className="athlete-disciplines">
-                            {a.disciplines?.length > 0 ? (
-                                a.disciplines.map((d) => (
-                                    <span key={d.discipline_id} className="disc-tag">
-                                        {d.name}
-                                    </span>
-                                ))
-                            ) : (
-                                <p className="placeholder">Bez disciplín</p>
-                            )}
-                        </div>
+                        {team.athletes?.length > 0 ? (
+                            team.athletes.map(a => (
+                                <AthleteCard key={a.athlete_id} athlete={a} />
+                            ))
+                        ) : (
+                            <p className="placeholder">Zatím žádní závodníci</p>
+                        )}
+
+                        {registration.status !== "submitted" && (
+                            <button
+                                className="btn-primary"
+                                onClick={() =>
+                                    navigate(`/teams/${team.team_id}/athletes/new`)
+                                }
+                            >
+                                ➕ Přidat závodníka
+                            </button>
+                        )}
                     </div>
                 ))}
 
-                {registration.status !== "submitted" && (
-                    <button
-                        className="btn-primary"
-                        onClick={() => navigate(`/registrations/${id}/athletes/new`)}
-                    >
-                        ➕ Přidat závodníka
-                    </button>
+                {/* 👇 GRID PATŘÍ SEM */}
+                {teams.length > 0 && (
+                    <DisciplineGrid
+                        registrationId={id}
+                        competitionId={registration.competition_id}
+                        teams={teams}
+                        readOnly={registration.status === "submitted"}
+                    />
                 )}
-                <p className="placeholder">Zatim nemas zadne zavodniky</p>
             </div>
+
         </div>
     );
 }

@@ -37,32 +37,3 @@ export const createAthlete = async ({ first_name, last_name, birth_year, gender 
     return result.rows[0];
 };
 
-// 4️⃣ Přiřadí disciplíny atletovi (entry)
-export const createEntriesForAthlete = async ({
-                                                  registration_id,
-                                                  competition_id,
-                                                  athlete_id,
-                                                  birth_year,
-                                                  disciplines
-                                              }) => {
-    for (const discipline_id of disciplines) {
-
-        // Ověřit, zda disciplína patří soutěži
-        const valid = await pool.query(
-            `SELECT 1 FROM competition_discipline 
-             WHERE competition_id = $1 AND discipline_id = $2`,
-            [competition_id, discipline_id]
-        );
-
-        if (valid.rowCount === 0) {
-            throw new Error("Selected discipline is not part of this competition.");
-        }
-
-        await pool.query(
-            `INSERT INTO entry (registration_id, athlete_id, discipline_id)
-             VALUES ($1, $2, $3)
-             ON CONFLICT DO NOTHING`,
-            [registration_id, athlete_id, discipline_id]
-        );
-    }
-};
