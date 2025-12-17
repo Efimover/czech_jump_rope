@@ -106,3 +106,21 @@
     background: #1976d2;
     color: white;
 }
+.danger-zone {
+    margin-top: 20px;
+    border-top: 1px solid #eee;
+    padding-top: 16px;
+}
+
+.btn-danger {
+    background: #c0392b;
+    color: white;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-danger:hover {
+    background: #a93226;
+}

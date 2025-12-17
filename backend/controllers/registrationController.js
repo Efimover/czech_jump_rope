@@ -2,14 +2,17 @@ import { pool } from "../db/index.js";
 export const getRegistration = async (req, res) => {
     try {
         const { registration_id } = req.params;
+        const userId = req.user.id;
 
         const reg = await pool.query(
             `SELECT r.*, c.name AS competition_name
      FROM registration r
      JOIN competition c ON c.competition_id = r.competition_id
-     WHERE r.registration_id = $1`,
-            [registration_id]
-        );
+     WHERE r.registration_id = $1
+       AND r.user_id = $2
+    `,
+    [registration_id, userId]
+);
 
         if (reg.rowCount === 0) {
             return res.status(404).json({ error: "Registration not found" });
@@ -88,5 +91,122 @@ export const createRegistration = async (req, res) => {
             status: "error",
             message: "Došlo k chybě serveru. Zkuste to prosím znovu."
         });
+    }
+};
+
+export const submitRegistration = async (req, res) => {
+    const { registration_id } = req.params;
+    const userId = req.user.id;
+
+    try {
+        // 1️⃣ ověř vlastnictví a stav
+        const regRes = await pool.query(
+            `
+            SELECT status
+            FROM registration
+            WHERE registration_id = $1
+              AND user_id = $2
+            `,
+            [registration_id, userId]
+        );
+
+        if (regRes.rowCount === 0) {
+            return res.status(403).json({
+                error: "Nepovolený přístup"
+            });
+        }
+
+        if (regRes.rows[0].status === "submitted") {
+            return res.status(400).json({
+                error: "Přihláška je již odeslaná"
+            });
+        }
+
+        // 2️⃣ musí existovat alespoň 1 tým
+        const teamRes = await pool.query(
+            `
+            SELECT COUNT(*)::int AS count
+            FROM team
+            WHERE registration_id = $1
+            `,
+            [registration_id]
+        );
+
+        if (teamRes.rows[0].count === 0) {
+            return res.status(400).json({
+                error: "Přihláška musí obsahovat alespoň jeden tým"
+            });
+        }
+
+        // 3️⃣ každý atlet musí mít alespoň jednu disciplínu
+        const invalidAthletes = await pool.query(
+            `
+            SELECT a.athlete_id
+            FROM athlete a
+            JOIN team_athlete ta ON ta.athlete_id = a.athlete_id
+            JOIN team t ON t.team_id = ta.team_id
+            WHERE t.registration_id = $1
+              AND NOT EXISTS (
+                  SELECT 1
+                  FROM entry e
+                  WHERE e.athlete_id = a.athlete_id
+              )
+            `,
+            [registration_id]
+        );
+
+        if (invalidAthletes.rowCount > 0) {
+            return res.status(400).json({
+                error: "Každý závodník musí mít alespoň jednu disciplínu"
+            });
+        }
+
+        // 4️⃣ OK → změna stavu
+        await pool.query(
+            `
+            UPDATE registration
+            SET status = 'submitted',
+                updated_at = now()
+            WHERE registration_id = $1
+            `,
+            [registration_id]
+        );
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error("submitRegistration error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};
+
+
+export const deleteRegistration = async (req, res) => {
+    const { registration_id } = req.params;
+    const userId = req.user.id;
+
+    try {
+        const result = await pool.query(
+            `
+            DELETE FROM registration
+            WHERE registration_id = $1
+              AND user_id = $2
+              AND status = 'saved'
+            RETURNING registration_id
+            `,
+            [registration_id, userId]
+        );
+
+        if (result.rowCount === 0) {
+            return res.status(403).json({
+                error: "Přihlášku nelze smazat (neexistuje nebo již byla odeslána)"
+            });
+        }
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error("deleteRegistration error:", err);
+        res.status(500).json({ error: "Server error" });
     }
 };

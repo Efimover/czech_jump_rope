@@ -4,12 +4,14 @@ import { requireRole } from "../middleware/roleMiddleware.js";
 
 import {
     createRegistration,
-    getRegistration
+    getRegistration,
+    submitRegistration,
+    deleteRegistration
 } from "../controllers/registrationController.js";
 
 import {
-    createAthleteController,
-    getAthletesForRegistration
+    createAthleteForTeam,
+    getAthletesByTeam
 } from "../controllers/athleteController.js";
 
 import { pool } from "../db/index.js";
@@ -102,29 +104,31 @@ router.post(
     createRegistration
 );
 
+
 /**
  * ---------------------------------------------------------
- *  ZÍSKAT ZÁVODNÍKY PRO REGISTRACI
- *  GET /api/registrations/:registration_id/athletes
+ *  ODESLAT PŘIHLÁŠKU (SUBMIT)
+ *  POST /api/registrations/:registration_id/submit
  * ---------------------------------------------------------
  */
-router.get(
-    "/:registration_id/athletes",
+router.post(
+    "/:registration_id/submit",
     verifyToken,
-    getAthletesForRegistration
+    requireRole("soutezici", "user"),
+    submitRegistration
 );
 
 /**
  * ---------------------------------------------------------
- *  PŘIDAT ZÁVODNÍKA K REGISTRACI
- *  POST /api/registrations/:registration_id/athletes
+ *  SMAZAT PŘIHLÁŠKU
+ *  DELETE /api/registrations/:registration_id
  * ---------------------------------------------------------
  */
-router.post(
-    "/:registration_id/athletes",
+router.delete(
+    "/:registration_id",
     verifyToken,
     requireRole("soutezici", "user"),
-    createAthleteController
+    deleteRegistration
 );
 
 export default router;

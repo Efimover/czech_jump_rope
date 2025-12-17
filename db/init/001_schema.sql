@@ -118,7 +118,6 @@ CREATE TABLE registration_referee (
 CREATE TABLE "team" (
                         team_id        BIGSERIAL PRIMARY KEY,
                         registration_id BIGINT NOT NULL REFERENCES registration(registration_id) ON DELETE CASCADE,
-                        event_id       BIGINT NOT NULL REFERENCES discipline(discipline_id) ON DELETE RESTRICT, -- soutěž/věc pro kterou je tým přihlášen
                         name           VARCHAR(200) NOT NULL,
                         created_at     TIMESTAMP WITH TIME ZONE DEFAULT now(),
                         UNIQUE (registration_id, name)

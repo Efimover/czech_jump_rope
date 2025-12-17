@@ -10,6 +10,7 @@ import CompetitionDetail from "./pages/CompetitionDetail.jsx";
 import RegistrationStart from "./pages/RegistrationStart.jsx";
 import RegistrationDetail from "./pages/RegistrationDetail.jsx";
 import AthleteAdd from "./pages/AthleteAdd.jsx";
+import AthleteEdit from "./pages/AthleteEdit.jsx";
 
 export default function App() {
     return (
@@ -35,6 +36,13 @@ export default function App() {
                     path="/teams/:teamId/athletes/new"
                     element={<AthleteAdd />}
                 />
+
+
+                <Route
+                    path="/athletes/:athleteId/edit"
+                    element={<AthleteEdit />}
+                />
+
             </Routes>
         </BrowserRouter>
     );

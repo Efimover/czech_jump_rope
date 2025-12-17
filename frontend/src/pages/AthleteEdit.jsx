@@ -1,36 +1,51 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import "../styles/athleteAdd.css";
 
-export default function AthleteAdd() {
-    const { teamId } = useParams();
+export default function AthleteEdit() {
+    const { athleteId } = useParams();
     const navigate = useNavigate();
 
+    const [loading, setLoading] = useState(true);
     const [form, setForm] = useState({
         first_name: "",
         last_name: "",
         birth_year: "",
         gender: ""
     });
-    const currentYear = new Date().getFullYear();
 
-    function validateBirthYear(year) {
-        if (year < 1900 || year > currentYear) {
-            return "Neplatný rok narození";
+    useEffect(() => {
+        loadAthlete();
+    }, [athleteId]);
+
+    async function loadAthlete() {
+        try {
+            const res = await api.get(`/athletes/${athleteId}`);
+            setForm({
+                first_name: res.data.first_name,
+                last_name: res.data.last_name,
+                birth_year: res.data.birth_year,
+                gender: res.data.gender
+            });
+        } catch (err) {
+            alert("Nepodařilo se načíst závodníka");
+            navigate(-1);
+        } finally {
+            setLoading(false);
         }
-        return null;
     }
 
     async function submit() {
         try {
-            await api.post(`/athletes/by-team/${teamId}`, form);
-            navigate(-1);
+            await api.put(`/athletes/${athleteId}`, form);
+            navigate(-1); // zpět na detail přihlášky
         } catch (err) {
-            console.error(err);
-            alert(err.response?.data?.error || "Nelze uložit závodníka.");
+            alert(err.response?.data?.error || "Nelze uložit změny");
         }
     }
+
+    if (loading) return <p className="loading">Načítám…</p>;
 
     return (
         <div className="athlete-wrapper">
@@ -39,8 +54,9 @@ export default function AthleteAdd() {
             </button>
 
             <div className="athlete-card">
-                <h1>Přidat závodníka</h1>
+                <h1>Upravit závodníka</h1>
 
+                {/* Osobní údaje */}
                 <div className="form-section">
                     <h2>Osobní údaje</h2>
 
@@ -74,22 +90,32 @@ export default function AthleteAdd() {
                             <label key={g}>
                                 <input
                                     type="radio"
+                                    value={g}
                                     checked={form.gender === g}
                                     onChange={() =>
                                         setForm({ ...form, gender: g })
                                     }
                                 />
-                                {g}
+                                {g === "M"
+                                    ? " Chlapec"
+                                    : g === "F"
+                                        ? " Dívka"
+                                        : " Jiný"}
                             </label>
                         ))}
                     </div>
                 </div>
 
+                {/* Akce */}
                 <div className="action-row">
                     <button className="btn-primary" onClick={submit}>
-                        Uložit závodníka
+                        Uložit změny
                     </button>
-                    <button className="btn-outline" onClick={() => navigate(-1)}>
+
+                    <button
+                        className="btn-outline"
+                        onClick={() => navigate(-1)}
+                    >
                         Zrušit
                     </button>
                 </div>

@@ -90,7 +90,52 @@ router.get("/:id", async (req, res) => {
     }
 });
 
+// ======================================================
+//  DISCIPLÍNY PRO KONKRÉTNÍ SOUTĚŽ
+//  GET /api/competitions/:competition_id/disciplines
+// ======================================================
+router.get(
+    "/:competition_id/disciplines",
+    verifyToken,
+    async (req, res) => {
+        const { competition_id } = req.params;
 
+        try {
+            const result = await pool.query(
+                `
+                SELECT
+                    d.discipline_id,
+                    d.name,
+                    d.is_team,
+                    d.pocet_athletes,
+                    COALESCE(
+                        json_agg(
+                            json_build_object(
+                                'age_category_id', ac.age_category_id,
+                                'min_age', ac.min_age,
+                                'max_age', ac.max_age
+                            )
+                        ) FILTER (WHERE ac.age_category_id IS NOT NULL),
+                        '[]'
+                    ) AS age_categories
+                FROM competition_discipline cd
+                JOIN discipline d ON d.discipline_id = cd.discipline_id
+                LEFT JOIN discipline_age_category dac ON dac.discipline_id = d.discipline_id
+                LEFT JOIN age_category ac ON ac.age_category_id = dac.age_category_id
+                WHERE cd.competition_id = $1
+                GROUP BY d.discipline_id
+                ORDER BY d.name
+                `,
+                [competition_id]
+            );
+
+            res.json(result.rows);
+        } catch (err) {
+            console.error("getDisciplinesForCompetition error:", err);
+            res.status(500).json({ error: "Server error" });
+        }
+    }
+);
 
 
 export default router;

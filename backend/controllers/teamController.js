@@ -2,16 +2,19 @@ import { pool } from "../db/index.js";
 
 export const getTeamsByRegistration = async (req, res) => {
     const { registration_id } = req.params;
+    const userId = req.user.id;
 
     try {
         const result = await pool.query(
             `
-      SELECT team_id, name, created_at
-      FROM team
-      WHERE registration_id = $1
-      ORDER BY created_at
-      `,
-            [registration_id]
+                SELECT t.team_id, t.name, t.created_at
+                FROM team t
+                         JOIN registration r ON r.registration_id = t.registration_id
+                WHERE t.registration_id = $1
+                  AND r.user_id = $2
+                ORDER BY t.created_at
+            `,
+            [registration_id, userId]
         );
 
         res.json(result.rows);

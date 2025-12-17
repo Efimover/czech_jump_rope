@@ -2,6 +2,8 @@ import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import "../styles/registrationDetail.css";
+import DisciplineGrid from "./DisciplineGrid.jsx";
+import AthleteCard from "./AthleteCard.jsx";
 
 export default function RegistrationDetail() {
     const { id } = useParams();
@@ -48,6 +50,66 @@ export default function RegistrationDetail() {
             setLoading(false);
         }
     }
+    async function createTeam() {
+        const name = prompt("Zadejte název týmu:");
+        if (!name) return;
+
+        try {
+            await api.post(`/teams/by-registration/${id}`, { name });
+            await loadTeamsWithAthletes(); // refresh dat
+        } catch (err) {
+            alert("Nepodařilo se vytvořit tým");
+        }
+    }
+
+    async function deleteAthlete(athleteId, teamId) {
+        if (!confirm("Opravdu chcete závodníka smazat?")) return;
+
+        try {
+            await api.delete(`/athletes/${athleteId}`);
+            await loadTeamsWithAthletes(); // refresh
+        } catch (err) {
+            alert("Nepodařilo se smazat závodníka");
+        }
+    }
+
+    async function submitRegistration() {
+        if (!confirm("Opravdu chceš odeslat přihlášku? Po odeslání již nepůjde upravovat.")) {
+            return;
+        }
+
+        try {
+            await api.post(`/registrations/${id}/submit`);
+            alert("Přihláška byla úspěšně odeslána");
+            await loadRegistration(); // refresh stavu
+        } catch (err) {
+            alert(
+                err.response?.data?.error ||
+                "Přihlášku se nepodařilo odeslat"
+            );
+        }
+    }
+
+    async function deleteRegistration() {
+        const ok = confirm(
+            "Opravdu chceš smazat přihlášku?\n" +
+            "Všechna data (týmy, závodníci, disciplíny) budou nenávratně odstraněna."
+        );
+
+        if (!ok) return;
+
+        try {
+            await api.delete(`/registrations/${id}`);
+            alert("Přihláška byla smazána");
+            navigate("/"); // nebo seznam přihlášek
+        } catch (err) {
+            alert(
+                err.response?.data?.error ||
+                "Přihlášku se nepodařilo smazat"
+            );
+        }
+    }
+
 
 
     if (loading) return <p className="loading">Načítám přihlášku...</p>;
@@ -105,7 +167,20 @@ export default function RegistrationDetail() {
                 <h2>Závodníci</h2>
 
                 {teams.length === 0 && (
-                    <p className="placeholder">Zatím nebyl vytvořen žádný tým.</p>
+                    <>
+                        <p className="placeholder">
+                            Zatím nebyl vytvořen žádný tým.
+                        </p>
+
+                        {registration.status === "saved" && (
+                            <button
+                                className="btn-primary"
+                                onClick={createTeam}
+                            >
+                                ➕ Vytvořit tým
+                            </button>
+                        )}
+                    </>
                 )}
 
                 {teams.map(team => (
@@ -114,7 +189,15 @@ export default function RegistrationDetail() {
 
                         {team.athletes?.length > 0 ? (
                             team.athletes.map(a => (
-                                <AthleteCard key={a.athlete_id} athlete={a} />
+                                <AthleteCard
+                                    key={a.athlete_id}
+                                    athlete={a}
+                                    readOnly={registration.status === "submitted"}
+                                    onEdit={() =>
+                                        navigate(`/athletes/${a.athlete_id}/edit`)
+                                    }
+                                    onDelete={() => deleteAthlete(a.athlete_id, team.team_id)}
+                                />
                             ))
                         ) : (
                             <p className="placeholder">Zatím žádní závodníci</p>
@@ -143,6 +226,24 @@ export default function RegistrationDetail() {
                     />
                 )}
             </div>
+            {registration.status === "saved" && (
+                <button
+                    className="btn-primary"
+                    onClick={submitRegistration}
+                >
+                    ✔ Odeslat přihlášku
+                </button>
+            )}
+            {registration.status === "saved" && (
+                <div className="danger-zone">
+                    <button
+                        className="btn-danger"
+                        onClick={deleteRegistration}
+                    >
+                        🗑 Smazat přihlášku
+                    </button>
+                </div>
+            )}
 
         </div>
     );

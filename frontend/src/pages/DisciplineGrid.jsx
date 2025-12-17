@@ -1,6 +1,7 @@
 import React, { useEffect, useMemo, useState } from "react";
 import api from "../api/apiClient";
 import GridCell from "./GridCell";
+import "../styles/disciplineGrid.css";
 
 export default function DisciplineGrid({
                                            registrationId,
@@ -24,6 +25,11 @@ export default function DisciplineGrid({
             `/competitions/${competitionId}/disciplines`
         );
         setDisciplines(res.data);
+    }
+
+    async function deleteEntry(entryId) {
+        await api.delete(`/entries/${entryId}`);
+        setEntries(prev => prev.filter(e => e.entry_id !== entryId));
     }
 
     async function loadEntries() {

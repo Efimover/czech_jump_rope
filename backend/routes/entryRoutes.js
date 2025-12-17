@@ -9,18 +9,12 @@ import {
 
 const router = express.Router();
 
-/**
- * GET entries pro registraci
- */
 router.get(
     "/by-registration/:registration_id",
     verifyToken,
     getEntriesByRegistration
 );
 
-/**
- * INSERT / UPDATE entry
- */
 router.post(
     "/",
     verifyToken,
@@ -28,9 +22,6 @@ router.post(
     upsertEntry
 );
 
-/**
- * DELETE entry
- */
 router.delete(
     "/:entry_id",
     verifyToken,

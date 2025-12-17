@@ -1,0 +1,24 @@
+.discipline-grid {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.discipline-grid th,
+.discipline-grid td {
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    text-align: center;
+}
+
+.grid-cell {
+    cursor: pointer;
+    user-select: none;
+}
+
+.grid-cell:hover {
+    background-color: #eef;
+}
+
+.grid-cell.error {
+    background-color: #ffcccc;
+}

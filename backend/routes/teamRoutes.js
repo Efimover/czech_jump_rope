@@ -9,13 +9,13 @@ import {
 const router = express.Router();
 
 router.get(
-    "/teams/:team_id/athletes",
+    "/by-registration/:registration_id",
     verifyToken,
     getTeamsByRegistration
 );
 
 router.post(
-    "/teams/:team_id/athletes",
+    "/by-registration/:registration_id",
     verifyToken,
     requireRole("soutezici", "user"),
     createTeam

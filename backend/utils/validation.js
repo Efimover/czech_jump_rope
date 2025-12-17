@@ -26,3 +26,36 @@ export const isValidBirthDate = (date) => {
     const age = today.getFullYear() - birth.getFullYear();
     return age >= 1 && age <= 120; // rozumný limit
 };
+
+// ================================
+// VALIDACE ROKU NAROZENÍ PRO SOUTĚŽE
+// ================================
+export const validateBirthYearForCompetition = (
+    birthYear,
+    competitionYear
+) => {
+    if (!birthYear || isNaN(birthYear)) {
+        return "Rok narození musí být číslo";
+    }
+
+    if (birthYear < 1900) {
+        return "Rok narození je příliš nízký";
+    }
+
+    if (birthYear > competitionYear) {
+        return "Rok narození nemůže být v budoucnosti";
+    }
+
+    const age = competitionYear - birthYear;
+
+    if (age < 3) {
+        return "Závodník musí mít alespoň 3 roky";
+    }
+
+    if (age > 120) {
+        return "Neplatný věk závodníka";
+    }
+
+    return null; // ✅ OK
+};
+

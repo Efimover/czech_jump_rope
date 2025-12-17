@@ -6,6 +6,7 @@ export default function GridCell({
                                      entry,
                                      registrationId,
                                      onChange,
+                                     onDelete,
                                      readOnly = false
                                  }) {
     const [error, setError] = useState(null);
@@ -13,37 +14,57 @@ export default function GridCell({
     async function handleClick() {
         if (readOnly) return;
 
-        let payload = {
-            registration_id: registrationId,
-            athlete_id: athlete.athlete_id,
-            discipline_id: discipline.discipline_id
-        };
+        try {
+            // ===============================
+            // INDIVIDUÁLNÍ DISCIPLÍNA
+            // ===============================
+            if (!discipline.is_team) {
+                if (entry) {
+                    // smažeme entry
+                    await onDelete(entry.entry_id);
+                } else {
+                    await onChange({
+                        registration_id: registrationId,
+                        athlete_id: athlete.athlete_id,
+                        discipline_id: discipline.discipline_id,
+                        is_selected: true,
+                        team_group: null
+                    });
+                }
+                setError(null);
+                return;
+            }
 
-        if (!discipline.is_team) {
-            payload.is_selected = !entry;
-            payload.team_group = null;
-        } else {
+            // ===============================
+            // TÝMOVÁ DISCIPLÍNA
+            // ===============================
+            const max = discipline.pocet_athletes || 1;
             const next = !entry ? 1 : entry.team_group + 1;
 
-            // TODO: nahradit dynamickým limitem podle disciplíny
-            payload.team_group = next > 3 ? null : next;
-            payload.is_selected = payload.team_group !== null;
-        }
+            const team_group = next > max ? null : next;
 
-        try {
-            await onChange(payload);
+            await onChange({
+                registration_id: registrationId,
+                athlete_id: athlete.athlete_id,
+                discipline_id: discipline.discipline_id,
+                team_group,
+                is_selected: team_group !== null
+            });
+
             setError(null);
+
         } catch (err) {
             const code = err?.response?.data?.code;
             setError(code || "ERROR");
-
-            // auto-clear error po chvíli
             setTimeout(() => setError(null), 2000);
         }
     }
 
+    // ===============================
+    // CO ZOBRAZIT V BUŇCE
+    // ===============================
     let display = "";
-    if (entry) {
+    if (entry && entry.is_selected) {
         display = discipline.is_team ? entry.team_group : "X";
     }
 

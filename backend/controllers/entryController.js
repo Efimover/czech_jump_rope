@@ -2,22 +2,20 @@ import { pool } from "../db/index.js";
 
 export const getEntriesByRegistration = async (req, res) => {
     const { registration_id } = req.params;
+    const userId = req.user.id;
 
     try {
         const result = await pool.query(
             `
-      SELECT
-        e.entry_id,
-        e.registration_id,
-        e.athlete_id,
-        e.discipline_id,
-        e.team_group,
-        e.is_selected
-      FROM entry e
-      WHERE e.registration_id = $1
-      `,
-            [registration_id]
+                SELECT e.*
+                FROM entry e
+                         JOIN registration r ON r.registration_id = e.registration_id
+                WHERE e.registration_id = $1
+                  AND r.user_id = $2
+            `,
+            [registration_id, userId]
         );
+
 
         res.json(result.rows);
     } catch (err) {
