@@ -35,52 +35,53 @@ export const getAthletesByTeam = async (req, res) => {
 export const createAthleteForTeam = async (req, res) => {
     const { team_id } = req.params;
     const { first_name, last_name, birth_year, gender } = req.body;
-
-    // zjisti rok soutěže
-    const compRes = await pool.query(
-        `
-    SELECT EXTRACT(YEAR FROM start_date)::int AS year
-    FROM competition
-    JOIN registration r ON r.competition_id = competition.competition_id
-    WHERE r.registration_id = $1
-    `,
-        [registration_id]
-    );
-
-    const competitionYear = compRes.rows[0].year;
-
-// validace
-    const birthError = validateBirthYearForCompetition(
-        birth_year,
-        competitionYear
-    );
-
-    if (birthError) {
-        return res.status(400).json({
-            code: "INVALID_BIRTH_YEAR",
-            error: birthError
-        });
-    }
+    const userId = req.user.id;
 
     try {
+        // 1️⃣ ověř, že tým patří uživateli a registrace není submitted
+        const teamRes = await pool.query(
+            `
+                SELECT r.registration_id
+                FROM team t
+                         JOIN registration r ON r.registration_id = t.registration_id
+                WHERE t.team_id = $1
+                  AND r.user_id = $2
+                  AND r.status != 'submitted'
+            `,
+            [team_id, userId]
+        );
+
+        if (teamRes.rowCount === 0) {
+            return res.status(403).json({
+                error: "Nelze přidat závodníka do tohoto týmu"
+            });
+        }
+
+        // 2️⃣ vytvoř atleta
         const athleteRes = await pool.query(
             `
-      INSERT INTO athlete (first_name, last_name, birth_year, gender)
-      VALUES ($1, $2, $3, $4)
-      RETURNING athlete_id
-      `,
+            INSERT INTO athlete (first_name, last_name, birth_year, gender)
+            VALUES ($1, $2, $3, $4)
+            RETURNING athlete_id
+            `,
             [first_name, last_name, birth_year, gender]
         );
 
+        const athleteId = athleteRes.rows[0].athlete_id;
+
+        // 3️⃣ přiřaď atleta do týmu
         await pool.query(
             `
-      INSERT INTO team_athlete (team_id, athlete_id)
-      VALUES ($1, $2)
-      `,
-            [team_id, athleteRes.rows[0].athlete_id]
+                INSERT INTO team_athlete (team_id, athlete_id)
+                VALUES ($1, $2)
+            `,
+            [team_id, athleteId]
         );
 
-        res.status(201).json({ success: true });
+        res.status(201).json({
+            athlete_id: athleteId
+        });
+
     } catch (err) {
         console.error("createAthleteForTeam error:", err);
         res.status(500).json({ error: "Server error" });

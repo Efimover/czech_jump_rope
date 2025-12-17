@@ -160,16 +160,43 @@ export const submitRegistration = async (req, res) => {
                 error: "Každý závodník musí mít alespoň jednu disciplínu"
             });
         }
+        const invalidTeams = await pool.query(
+            `
+    SELECT
+        e.discipline_id,
+        d.name,
+        e.team_group,
+        COUNT(*) AS count,
+        d.pocet_athletes
+    FROM entry e
+    JOIN discipline d ON d.discipline_id = e.discipline_id
+    WHERE e.registration_id = $1
+      AND d.is_team = true
+      AND e.team_group IS NOT NULL
+    GROUP BY e.discipline_id, d.name, e.team_group, d.pocet_athletes
+    HAVING COUNT(*) < d.pocet_athletes
+    `,
+            [registration_id]
+        );
 
-        // 4️⃣ OK → změna stavu
+        if (invalidTeams.rowCount > 0) {
+            return res.status(400).json({
+                code: "INCOMPLETE_TEAMS",
+                error: "Některé týmové disciplíny nemají plný počet závodníků",
+                details: invalidTeams.rows
+            });
+        }
+
+        // → změna stavu
         await pool.query(
             `
-            UPDATE registration
-            SET status = 'submitted',
-                updated_at = now()
-            WHERE registration_id = $1
+                UPDATE registration
+                SET status = 'submitted'
+                WHERE registration_id = $1
+                  AND user_id = $2
+                  AND status = 'saved'
             `,
-            [registration_id]
+            [registration_id, userId]
         );
 
         res.json({ success: true });

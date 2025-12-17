@@ -74,19 +74,28 @@ export default function RegistrationDetail() {
     }
 
     async function submitRegistration() {
-        if (!confirm("Opravdu chceš odeslat přihlášku? Po odeslání již nepůjde upravovat.")) {
+        if (
+            !confirm(
+                "Opravdu chceš odeslat přihlášku?\n" +
+                "Po odeslání již nepůjde upravovat."
+            )
+        ) {
             return;
         }
 
         try {
             await api.post(`/registrations/${id}/submit`);
             alert("Přihláška byla úspěšně odeslána");
-            await loadRegistration(); // refresh stavu
+            await loadRegistration();
         } catch (err) {
-            alert(
-                err.response?.data?.error ||
-                "Přihlášku se nepodařilo odeslat"
-            );
+            if (err.response?.data?.code === "INCOMPLETE_TEAMS") {
+                alert("Některé týmové disciplíny nemají plný počet závodníků.");
+            } else {
+                alert(
+                    err.response?.data?.error ||
+                    "Přihlášku nelze odeslat."
+                );
+            }
         }
     }
 

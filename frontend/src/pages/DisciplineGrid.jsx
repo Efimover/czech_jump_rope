@@ -47,21 +47,35 @@ export default function DisciplineGrid({
         return map;
     }, [entries]);
 
-    async function saveEntry(payload) {
-        try {
-            const res = await api.post("/entries", payload);
+    function findFreeTeamGroup(entries, discipline) {
+        const limit = discipline.pocet_athletes;
 
-            setEntries(prev => {
-                const filtered = prev.filter(
-                    e =>
-                        !(
-                            e.athlete_id === payload.athlete_id &&
-                            e.discipline_id === payload.discipline_id
-                        )
-                );
-                return [...filtered, res.data];
+        // spočítáme obsazenost mini-týmů
+        const counts = {};
+        entries.forEach(e => {
+            if (e.team_group != null) {
+                counts[e.team_group] = (counts[e.team_group] || 0) + 1;
+            }
+        });
+
+        // najdeme první mini-tým, který není plný
+        let group = 1;
+        while ((counts[group] || 0) >= limit) {
+            group++;
+        }
+
+        return group;
+    }
+
+    async function saveEntry({athlete_id, discipline_id}) {
+        try {
+            const res = await api.post("/entries/auto-assign", {
+                registration_id: registrationId,
+                athlete_id,
+                discipline_id
             });
 
+            setEntries(prev => [...prev, res.data]);
         } catch (err) {
             const code = err.response?.data?.code;
 
@@ -106,8 +120,8 @@ export default function DisciplineGrid({
                                 athlete={a}
                                 discipline={d}
                                 entry={entryMap[`${a.athlete_id}_${d.discipline_id}`]}
-                                registrationId={registrationId}
-                                onChange={saveEntry}
+                                onAdd={saveEntry}
+                                onRemove={deleteEntry}
                                 readOnly={readOnly}
                             />
                         ))}

@@ -223,3 +223,73 @@ export const deleteEntry = async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 };
+
+export const autoAssignEntry = async (req, res) => {
+    const { registration_id, athlete_id, discipline_id } = req.body;
+    const userId = req.user.id;
+
+    try {
+        // ověření registrace
+        const reg = await pool.query(
+            `SELECT status FROM registration WHERE registration_id=$1 AND user_id=$2`,
+            [registration_id, userId]
+        );
+        if (reg.rowCount === 0 || reg.rows[0].status === "submitted") {
+            return res.status(403).json({ error: "Nelze upravovat" });
+        }
+
+        const dRes = await pool.query(
+            `SELECT is_team, pocet_athletes FROM discipline WHERE discipline_id=$1`,
+            [discipline_id]
+        );
+        const discipline = dRes.rows[0];
+
+        // INDIVIDUÁLNÍ
+        if (!discipline.is_team) {
+            const result = await pool.query(
+                `
+                INSERT INTO entry (registration_id, athlete_id, discipline_id)
+                VALUES ($1,$2,$3)
+                ON CONFLICT (athlete_id, discipline_id) DO NOTHING
+                RETURNING *
+                `,
+                [registration_id, athlete_id, discipline_id]
+            );
+            return res.json(result.rows[0]);
+        }
+
+        // TÝMOVÁ – najdi volný mini-tým
+        const entriesRes = await pool.query(
+            `
+            SELECT team_group, COUNT(*)::int AS count
+            FROM entry
+            WHERE registration_id=$1 AND discipline_id=$2
+            GROUP BY team_group
+            `,
+            [registration_id, discipline_id]
+        );
+
+        const counts = {};
+        entriesRes.rows.forEach(r => (counts[r.team_group] = r.count));
+
+        let group = 1;
+        while ((counts[group] || 0) >= discipline.pocet_athletes) {
+            group++;
+        }
+
+        const result = await pool.query(
+            `
+            INSERT INTO entry (registration_id, athlete_id, discipline_id, team_group)
+            VALUES ($1,$2,$3,$4)
+            RETURNING *
+            `,
+            [registration_id, athlete_id, discipline_id, group]
+        );
+
+        res.json(result.rows[0]);
+
+    } catch (err) {
+        console.error("autoAssignEntry error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};

@@ -4,7 +4,8 @@ import { requireRole } from "../middleware/roleMiddleware.js";
 import {
     getEntriesByRegistration,
     upsertEntry,
-    deleteEntry
+    deleteEntry,
+    autoAssignEntry
 } from "../controllers/entryController.js";
 
 const router = express.Router();
@@ -27,6 +28,13 @@ router.delete(
     verifyToken,
     requireRole("soutezici", "user"),
     deleteEntry
+);
+
+router.post(
+    "/auto-assign",
+    verifyToken,
+    requireRole("soutezici", "user"),
+    autoAssignEntry
 );
 
 export default router;
