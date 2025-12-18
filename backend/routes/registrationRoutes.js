@@ -3,8 +3,10 @@ import express from "express";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
 
+
 import {
     createRegistration,
+    getMyRegistrations,
     getRegistration,
     submitRegistration,
     deleteRegistration
@@ -83,6 +85,14 @@ router.get("/check", verifyToken, async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+
+
+
+router.get(
+    "/my",
+    verifyToken,
+    getMyRegistrations
+);
 
 /**
  * ---------------------------------------------------------

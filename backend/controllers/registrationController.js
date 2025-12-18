@@ -249,3 +249,49 @@ export const deleteRegistration = async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 };
+export const getMyRegistrations = async (req, res) => {
+    const userId = req.user.id;
+
+    try {
+        const result = await pool.query(
+            `
+                SELECT
+                    r.registration_id,
+                    r.status,
+                    r.created_at,
+                    r.updated_at,
+                    c.name AS competition_name,
+
+                    COALESCE(
+                                    ARRAY_AGG(DISTINCT d.name)
+                                    FILTER (WHERE d.name IS NOT NULL),
+                                    '{}'
+                    ) AS disciplines
+
+                FROM registration r
+                         JOIN competition c
+                              ON c.competition_id = r.competition_id
+
+                         LEFT JOIN team t
+                                   ON t.registration_id = r.registration_id
+                         LEFT JOIN team_athlete ta
+                                   ON ta.team_id = t.team_id
+                         LEFT JOIN entry e
+                                   ON e.athlete_id = ta.athlete_id
+                                       AND e.registration_id = r.registration_id
+                         LEFT JOIN discipline d
+                                   ON d.discipline_id = e.discipline_id
+
+                WHERE r.user_id = $1
+                GROUP BY r.registration_id, c.name
+                ORDER BY r.created_at DESC
+            `,
+            [userId]
+        );
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error("getMyRegistrations error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};

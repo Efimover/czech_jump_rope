@@ -11,6 +11,7 @@ import RegistrationStart from "./pages/RegistrationStart.jsx";
 import RegistrationDetail from "./pages/RegistrationDetail.jsx";
 import AthleteAdd from "./pages/AthleteAdd.jsx";
 import AthleteEdit from "./pages/AthleteEdit.jsx";
+import MyRegistrations from "./pages/MyRegistrations.jsx";
 
 export default function App() {
     return (
@@ -41,6 +42,10 @@ export default function App() {
                 <Route
                     path="/athletes/:athleteId/edit"
                     element={<AthleteEdit />}
+                />
+                <Route
+                    path="/my-registrations"
+                    element={<MyRegistrations />}
                 />
 
             </Routes>

@@ -1,0 +1,65 @@
+.filter-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.filter-row button {
+    padding: 6px 12px;
+    border: 1px solid #ccc;
+    background: white;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.filter-row button.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+.reg-card {
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+    background: #fff;
+}
+
+.reg-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.status.saved {
+    color: #856404;
+    background: #fff3cd;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.status.submitted {
+    color: #155724;
+    background: #d4edda;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.reg-disciplines {
+    margin: 8px 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+}
+
+.discipline-chip {
+    background: #eef;
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.85rem;
+}
+
+.reg-actions {
+    display: flex;
+    gap: 8px;
+}
