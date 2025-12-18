@@ -49,9 +49,21 @@ export const createRegistration = async (req, res) => {
 
         // 2️⃣ Kontrola existence soutěže
         const comp = await pool.query(
-            `SELECT reg_start, reg_end FROM competition WHERE competition_id = $1`,
+            `
+                SELECT competition_id
+                FROM competition
+                WHERE competition_id = $1
+                  AND CURRENT_DATE BETWEEN reg_start AND reg_end
+            `,
             [competition_id]
         );
+
+        if (comp.rowCount === 0) {
+            return res.status(400).json({
+                code: "REGISTRATION_CLOSED",
+                error: "Registrace do soutěže není otevřená"
+            });
+        }
 
         if (comp.rowCount === 0) {
             return res.status(404).json({
@@ -61,15 +73,15 @@ export const createRegistration = async (req, res) => {
         }
 
         const { reg_start, reg_end } = comp.rows[0];
-        const today = new Date();
-
-        // 3️⃣ Přihlašování povoleno?
-        if (today < new Date(reg_start) || today > new Date(reg_end)) {
-            return res.status(400).json({
-                status: "error",
-                message: "Registrace do soutěže není aktuálně otevřena."
-            });
-        }
+        // const today = new Date();
+        //
+        // // 3️⃣ Přihlašování povoleno?
+        // if (today < new Date(reg_start) || today > new Date(reg_end)) {
+        //     return res.status(400).json({
+        //         status: "error",
+        //         message: "Registrace do soutěže není aktuálně otevřena."
+        //     });
+        // }
 
         // 4️⃣ Vytvoření přihlášky
         const result = await pool.query(

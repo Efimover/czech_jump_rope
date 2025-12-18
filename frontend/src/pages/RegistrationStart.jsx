@@ -56,6 +56,7 @@ export default function RegistrationStart() {
                 return;
             }
 
+
             setStep("confirm");
         } catch (err) {
             console.error(err);

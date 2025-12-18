@@ -2,6 +2,7 @@ import React, { useEffect, useState, useContext } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { getCompetition, getCompetitionDisciplines } from "../api/competitionApi";
 import { AuthContext } from "../context/AuthContext";
+import { formatDate } from "../utils/date";
 import "../styles/competitionDetail.css";
 
 export default function CompetitionDetail() {
@@ -57,12 +58,12 @@ export default function CompetitionDetail() {
                 <div className="detail-grid">
                     <div className="detail-item">
                         <strong>Datum konání:</strong>
-                        <span>{competition.start_date} — {competition.end_date}</span>
+                        <span>{formatDate(competition.start_date)} — {formatDate(competition.end_date)}</span>
                     </div>
 
                     <div className="detail-item">
                         <strong>Registrace:</strong>
-                        <span>{competition.reg_start} — {competition.reg_end}</span>
+                        <span>{formatDate(competition.reg_start)} — {formatDate(competition.reg_end)}</span>
                     </div>
 
                     <div className="detail-item">
