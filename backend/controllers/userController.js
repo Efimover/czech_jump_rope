@@ -117,6 +117,49 @@ export const getProfile = async (req, res) => {
     }
 };
 
+export const getMe = async (req, res) => {
+    const userId = req.user.id;
+
+    const result = await pool.query(
+        `
+        SELECT
+            user_id,
+            first_name,
+            last_name,
+            email,
+            date_birth,
+            created_at
+        FROM user_account
+        WHERE user_id = $1
+        `,
+        [userId]
+    );
+
+    res.json(result.rows[0]);
+
+};
+
+export const updateMe = async (req, res) => {
+    const userId = req.user.id;
+    const { first_name, last_name, date_birth } = req.body;
+
+    const result = await pool.query(
+        `
+        UPDATE user_account
+        SET
+            first_name = $1,
+            last_name = $2,
+            date_birth = $3
+        WHERE user_id = $4
+        RETURNING
+            user_id, first_name, last_name, email, date_birth
+        `,
+        [first_name, last_name, date_birth, userId]
+    );
+
+    res.json(result.rows[0]);
+};
+
 export const assignRole = async (req, res) => {
     try {
         const { id } = req.params;      // user_id
@@ -197,3 +240,66 @@ export const deleteUser = async (req, res) => {
     }
 };
 
+export const changePassword = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { currentPassword, newPassword } = req.body;
+
+        // 1️⃣ validace vstupu
+        if (!currentPassword || !newPassword) {
+            return res.status(400).json({
+                error: "Chybí aktuální nebo nové heslo"
+            });
+        }
+
+        // 2️⃣ načti uživatele
+        const userRes = await pool.query(
+            `
+            SELECT password
+            FROM user_account
+            WHERE user_id = $1
+            `,
+            [userId]
+        );
+
+        if (userRes.rowCount === 0) {
+            return res.status(404).json({ error: "Uživatel nenalezen" });
+        }
+
+        const hash = userRes.rows[0].password;
+
+        if (!hash) {
+            return res.status(500).json({
+                error: "Uživatel nemá uložené heslo"
+            });
+        }
+
+        // 3️⃣ ověř staré heslo
+        const match = await bcrypt.compare(currentPassword, hash);
+
+        if (!match) {
+            return res.status(400).json({
+                error: "Aktuální heslo není správné"
+            });
+        }
+
+        // 4️⃣ zahashuj nové heslo
+        const newHash = await bcrypt.hash(newPassword, 10);
+
+        // 5️⃣ ulož nové heslo
+        await pool.query(
+            `
+            UPDATE user_account
+            SET password = $1
+            WHERE user_id = $2
+            `,
+            [newHash, userId]
+        );
+
+        res.json({ success: true });
+
+    } catch (err) {
+        console.error("changePassword error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};

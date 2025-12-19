@@ -13,6 +13,8 @@ import AthleteAdd from "./pages/AthleteAdd.jsx";
 import AthleteEdit from "./pages/AthleteEdit.jsx";
 import MyRegistrations from "./pages/MyRegistrations.jsx";
 
+import Profile from "./pages/Profile.jsx";
+
 export default function App() {
     return (
         <BrowserRouter>
@@ -46,6 +48,11 @@ export default function App() {
                 <Route
                     path="/my-registrations"
                     element={<MyRegistrations />}
+                />
+
+                <Route
+                    path="/profile"
+                    element={<Profile />}
                 />
 
             </Routes>

@@ -1,14 +1,37 @@
-import React, { useEffect, useState } from "react";
+import React, {useContext, useEffect, useState} from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import { formatDate } from "../utils/date";
 import "../styles/myRegistrations.css";
+import { AuthContext } from "../context/AuthContext";
 
 export default function MyRegistrations() {
+    const { user } = useContext(AuthContext);
     const [registrations, setRegistrations] = useState([]);
     const [filter, setFilter] = useState("all");
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+
+    if (!user) {
+        return (
+            <div className="page-wrapper">
+                <div className="empty-state">
+                    <h2>Moje přihlášky</h2>
+
+                    <p>
+                        Pro zobrazení svých přihlášek se prosím přihlaste do systému.
+                    </p>
+
+                    <button
+                        className="btn-primary"
+                        onClick={() => navigate("/login")}
+                    >
+                        🔐 Přihlásit se
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     const filtered = React.useMemo(() => {
         if (filter === "all") return registrations;

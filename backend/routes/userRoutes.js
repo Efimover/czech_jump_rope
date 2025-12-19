@@ -2,11 +2,13 @@ import express from "express";
 import {
     registerUser,
     loginUser,
-    getProfile,
     assignRole,
     getUser,
     getUsers,
-    deleteUser
+    deleteUser,
+    getMe,
+    updateMe,
+    changePassword
 } from "../controllers/userController.js";
 import { validateRegister } from "../middleware/validateRegister.js";
 import {verifyToken} from "../middleware/authMiddleware.js";
@@ -18,12 +20,17 @@ const router = express.Router();
 router.post("/register", validateRegister, registerUser);
 router.post("/login", loginUser);
 
+// 👤 PROFIL PŘIHLÁŠENÉHO UŽIVATELE
+router.get("/me", verifyToken, getMe);
+router.put("/me", verifyToken, updateMe);
+router.put("/me/password", verifyToken, changePassword);
+
 // Protected
-router.get("/profile", verifyToken, getProfile);
+
 router.get("/", getUsers);        // List users
 router.get("/:user_id", getUser);
 router.delete("/:user_id", deleteUser); // Delete user
-
+router.put("/:user_id", verifyToken, updateMe);
 router.post("/:user_id/roles",
     verifyToken,
     requireRole("admin"),

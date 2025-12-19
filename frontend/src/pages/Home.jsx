@@ -5,6 +5,7 @@ import "../styles/home.css";
 import { AuthContext } from "../context/AuthContext";
 import { useContext } from "react";
 import {getCompetitions} from "../api/competitionApi.js";
+import { formatDate } from "../utils/date";
 
 export default function Home() {
     const navigate = useNavigate();
@@ -96,7 +97,7 @@ export default function Home() {
                         <div key={c.competition_id} className="competition-card">
                             <h3>{c.name}</h3>
                             <p><strong>Lokace:</strong> {c.location || "Neuvedeno"}</p>
-                            <p><strong>Datum:</strong> {c.start_date}</p>
+                            <p><strong>Datum:</strong> {formatDate(c.start_date)}</p>
                             <button
                                 className="card-btn"
                                 onClick={() => navigate(`/competitions/${c.competition_id}`)}
