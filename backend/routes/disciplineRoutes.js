@@ -4,10 +4,14 @@ import {
     assignDisciplineToCompetition,
     getDisciplinesByCompetition,
     updateDiscipline,
-    deleteDiscipline
+    deleteDiscipline,
+    getAllDisciplines
 } from "../controllers/disciplineController.js";
 
 const router = express.Router();
+
+//get All disciplines
+router.get("/", getAllDisciplines);
 
 // vytvořit disciplínu
 router.post("/", createDiscipline);

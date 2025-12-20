@@ -15,6 +15,7 @@ import MyRegistrations from "./pages/MyRegistrations.jsx";
 
 import Profile from "./pages/Profile.jsx";
 import CreateCompetition from "./pages/CreateCompetition.jsx";
+import CompetitionEdit from "./pages/CompetitionEdit.jsx";
 
 
 
@@ -58,6 +59,11 @@ export default function App() {
                     element={<Profile />}
                 />
                 <Route path="/competitions/new" element={<CreateCompetition />} />
+
+                <Route
+                    path="/competitions/:competitionId/edit"
+                    element={<CompetitionEdit />}
+                />
 
 
             </Routes>

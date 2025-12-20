@@ -1,5 +1,24 @@
 import { pool } from "../db/index.js";
 
+export const getAllDisciplines = async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT
+                discipline_id,
+                name,
+                type,
+                is_team,
+                pocet_athletes
+            FROM discipline
+            ORDER BY name
+        `);
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error("getAllDisciplines error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+};
 /**
  * Vytvořit disciplínu + její věkové kategorie
  */

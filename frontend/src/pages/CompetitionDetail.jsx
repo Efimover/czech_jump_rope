@@ -82,7 +82,7 @@ export default function CompetitionDetail() {
                 </div>
 
                 {/* 🔹 Seznam disciplín */}
-                <h2 style={{ marginTop: "30px" }}>Disciplíny</h2>
+                <h2 style={{marginTop: "30px"}}>Disciplíny</h2>
 
                 {loadingDisciplines ? (
                     <p>Načítám disciplíny...</p>
@@ -94,7 +94,7 @@ export default function CompetitionDetail() {
                             <li className="discipline-item" key={d.discipline_id}>
                                 <strong>{d.name}</strong>{" "}
                                 {d.is_team ? "(týmová)" : "(individuální)"} — typ: {d.type}
-                                <br />
+                                <br/>
                                 <span className="age-cats">
                                         Věková kategorie: {d.age_categories?.join(", ") || "neuvedeno"}
                                 </span>
@@ -122,6 +122,10 @@ export default function CompetitionDetail() {
                         </button>
                     )}
                 </div>
+
+                <button onClick={() => navigate(`/competitions/${id}/edit`)}>
+                    ⚙ Správa disciplín
+                </button>
             </div>
         </div>
     );

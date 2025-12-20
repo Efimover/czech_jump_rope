@@ -1,9 +1,12 @@
 import {useNavigate} from "react-router-dom";
-import {useState} from "react";
+import {useContext, useState} from "react";
 import api from "../api/apiClient.js";
+import {AuthContext} from "../context/AuthContext.jsx";
 
 export default function CreateCompetition() {
     const navigate = useNavigate();
+    const [step, setStep] = useState(1);
+    const [selectedDisciplines, setSelectedDisciplines] = useState([]);
 
     const [form, setForm] = useState({
         name: "",
@@ -16,13 +19,17 @@ export default function CreateCompetition() {
     });
 
     async function submit() {
-        try {
-            await api.post("/competitions", form);
-            alert("Soutěž vytvořena");
-            navigate("/");
-        } catch (err) {
-            alert(err.response?.data?.error || "Nelze vytvořit soutěž");
+        const res = await api.post("/competitions", form);
+        const competitionId = res.data.competition.competition_id;
+
+        for (const dId of selectedDisciplines) {
+            await api.post("/disciplines/assign", {
+                competition_id: competitionId,
+                discipline_id: dId
+            });
         }
+
+        navigate(`/competitions/${competitionId}`);
     }
 
     return (
