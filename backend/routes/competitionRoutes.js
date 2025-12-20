@@ -46,25 +46,6 @@ router.post(
     }
 );
 
-router.get("/", async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT
-                c.*,
-                u.first_name AS owner_first_name,
-                u.last_name AS owner_last_name,
-                u.email AS owner_email
-            FROM competition c
-                     JOIN user_account u ON u.user_id = c.owner_id
-            ORDER BY c.start_date ASC
-        `);
-
-        res.json(result.rows);
-    } catch (err) {
-        console.error("ERROR loading competitions:", err);
-        res.status(500).json({ error: "Server error" });
-    }
-});
 
 router.get("/:id", async (req, res) => {
     try {
@@ -137,5 +118,61 @@ router.get(
     }
 );
 
+router.get("/", async (req, res) => {
+    try {
+        const { status, time, discipline } = req.query;
+
+        const conditions = [];
+        const values = [];
+        let idx = 1;
+
+        if (status === "open") {
+            conditions.push(`NOW() BETWEEN c.reg_start AND c.reg_end`);
+        }
+        if (status === "closed") {
+            conditions.push(`NOW() NOT BETWEEN c.reg_start AND c.reg_end`);
+        }
+
+        if (time === "upcoming") {
+            conditions.push(`c.start_date >= NOW()`);
+        }
+        if (time === "past") {
+            conditions.push(`c.end_date < NOW()`);
+        }
+
+        if (discipline) {
+            values.push(`%${discipline.toLowerCase()}%`);
+            conditions.push(`
+                EXISTS (
+                    SELECT 1
+                    FROM competition_discipline cd
+                    JOIN discipline d ON d.discipline_id = cd.discipline_id
+                    WHERE cd.competition_id = c.competition_id
+                      AND LOWER(d.name) LIKE $${idx++}
+                )
+            `);
+        }
+
+        const where =
+            conditions.length > 0
+                ? "WHERE " + conditions.join(" AND ")
+                : "";
+
+        const result = await pool.query(
+            `
+                SELECT DISTINCT c.*
+                FROM competition c
+                    ${where}
+                ORDER BY c.start_date ASC
+            `,
+            values
+        );
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error("competition filter error:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
 
 export default router;

@@ -58,6 +58,11 @@
     color: white;
 }
 
+.filter-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 20px;
+}
 /* Hero section */
 .hero {
     text-align: center;

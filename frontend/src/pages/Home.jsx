@@ -10,22 +10,30 @@ import { formatDate } from "../utils/date";
 export default function Home() {
     const navigate = useNavigate();
     const { user, logout } = useContext(AuthContext);
-
+    const [filters, setFilters] = useState({
+        status: "all",
+        time: "all",
+        discipline: ""
+    });
     const [competitions, setCompetitions] = useState([]);
     const [loading, setLoading] = useState(true);
-
     useEffect(() => {
-        getCompetitions()
-            .then(data => {
-                console.log("Fetched competitions:", data);
-                setCompetitions(data);
-            })
-            .catch(err => console.error(err));
-    }, []);
+        const timeout = setTimeout(() => {
+            loadCompetitions();
+        }, 300);
+
+        return () => clearTimeout(timeout);
+    }, [filters]);
 
     const loadCompetitions = async () => {
         try {
-            const res = await api.get("/competitions");
+            const params = {};
+
+            if (filters.status !== "all") params.status = filters.status;
+            if (filters.time !== "all") params.time = filters.time;
+            if (filters.discipline) params.discipline = filters.discipline;
+
+            const res = await api.get("/competitions", { params });
             setCompetitions(res.data);
         } catch (err) {
             console.error("Error loading competitions:", err);
@@ -84,6 +92,34 @@ export default function Home() {
             </button>
             <section className="competitions-preview">
                 <h2>Soutěže</h2>
+
+                <div className="filter-bar">
+                    <select
+                        value={filters.status}
+                        onChange={e => setFilters(f => ({...f, status: e.target.value}))}
+                    >
+                        <option value="all">Všechny registrace</option>
+                        <option value="open">Registrace otevřená</option>
+                        <option value="closed">Registrace zavřená</option>
+                    </select>
+
+                    <select
+                        value={filters.time}
+                        onChange={e => setFilters(f => ({...f, time: e.target.value}))}
+                    >
+                        <option value="all">Všechny soutěže</option>
+                        <option value="upcoming">Nadcházející</option>
+                        <option value="past">Proběhlé</option>
+                    </select>
+
+                    <input
+                        placeholder="Hledat disciplínu…"
+                        value={filters.discipline}
+                        onChange={e =>
+                            setFilters(f => ({...f, discipline: e.target.value}))
+                        }
+                    />
+                </div>
 
                 {/* Žádné soutěže */}
                 {!loading && competitions.length === 0 && (

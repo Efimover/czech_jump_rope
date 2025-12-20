@@ -6,6 +6,7 @@ import CompetitionCard from "../components/CompetitionCard.jsx";
 export default function ListOfCompetitions() {
     const [competitions, setCompetitions] = useState([]);
 
+
     useEffect(() => {
         getCompetitions().then(setCompetitions);
     }, []);

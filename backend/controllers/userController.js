@@ -122,15 +122,17 @@ export const getMe = async (req, res) => {
 
     const result = await pool.query(
         `
-        SELECT
-            user_id,
-            first_name,
-            last_name,
-            email,
-            date_birth,
-            created_at
-        FROM user_account
-        WHERE user_id = $1
+            SELECT
+                u.user_id,
+                u.first_name,
+                u.last_name,
+                u.email,
+                json_agg(r.name) AS roles
+            FROM user_account u
+                     JOIN role_user ru ON ru.user_id = u.user_id
+                     JOIN role r ON r.role_id = ru.role_id
+            WHERE u.user_id = $1
+            GROUP BY u.user_id;
         `,
         [userId]
     );
