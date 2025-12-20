@@ -10,6 +10,15 @@ import { formatDate } from "../utils/date";
 export default function Home() {
     const navigate = useNavigate();
     const { user, logout } = useContext(AuthContext);
+
+    const canCreateCompetition =
+        user?.roles?.some(r =>
+            ["admin", "organizator"].includes(
+                typeof r === "string" ? r : r.role
+            )
+        );
+    console.log("USER:", user);
+    console.log("ROLES:", user?.roles);
     const [filters, setFilters] = useState({
         status: "all",
         time: "all",
@@ -84,14 +93,17 @@ export default function Home() {
                     Přihlašujte sebe nebo svůj tým do soutěží v rope skippingu rychle a přehledně.
                 </p>
             </section>
-            <button
-                className="btn-outline"
-                onClick={() => navigate("/my-registrations")}
-            >
-                📋 Moje přihlášky
-            </button>
+            {user && (
+                <button
+                    className="btn-outline"
+                    onClick={() => navigate("/my-registrations")}
+                >
+                    📋 Moje přihlášky
+                </button>
+            )}
             <section className="competitions-preview">
                 <h2>Soutěže</h2>
+
 
                 <div className="filter-bar">
                     <select
@@ -129,6 +141,15 @@ export default function Home() {
                 )}
                 {/* Seznam soutěží */}
                 <div className="competition-list">
+                    {canCreateCompetition && (
+                        <div
+                            className="competition-card create-card"
+                            onClick={() => navigate("/competitions/new")}
+                        >
+                            <div className="plus">＋</div>
+                            <p>Vytvořit novou soutěž</p>
+                        </div>
+                    )}
                     {competitions.map((c) => (
                         <div key={c.competition_id} className="competition-card">
                             <h3>{c.name}</h3>

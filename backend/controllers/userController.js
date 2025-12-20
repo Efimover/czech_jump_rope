@@ -62,23 +62,35 @@ export const loginUser = async (req, res) => {
         const { email, password } = req.body;
 
         const result = await pool.query(
-            `SELECT user_id, email, password, first_name, last_name FROM user_account WHERE email = $1`,
+            `SELECT user_id, email, password, first_name, last_name
+             FROM user_account
+             WHERE email = $1`,
             [email]
         );
 
         const user = result.rows[0];
-
         if (!user) {
             return res.status(400).json({ message: "Invalid email or password." });
         }
 
-        // Compare password
         const match = await bcrypt.compare(password, user.password);
         if (!match) {
             return res.status(400).json({ message: "Invalid email or password." });
         }
 
-        // Generate token
+        // ⬇⬇⬇ NAČTI ROLE ⬇⬇⬇
+        const rolesRes = await pool.query(
+            `
+            SELECT r.name
+            FROM role_user ru
+            JOIN role r ON r.role_id = ru.role_id
+            WHERE ru.user_id = $1
+            `,
+            [user.user_id]
+        );
+
+        const roles = rolesRes.rows.map(r => r.name);
+
         const token = jwt.sign(
             { user_id: user.user_id },
             process.env.JWT_SECRET,
@@ -92,9 +104,11 @@ export const loginUser = async (req, res) => {
                 user_id: user.user_id,
                 email: user.email,
                 first_name: user.first_name,
-                last_name: user.last_name
+                last_name: user.last_name,
+                roles          // ✅ TADY JE KLÍČ
             }
         });
+
     } catch (err) {
         console.error("Login error:", err);
         res.status(500).json({ message: "Server error." });

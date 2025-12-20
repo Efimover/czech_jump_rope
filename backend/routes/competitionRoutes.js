@@ -9,7 +9,7 @@ const router = express.Router();
 router.post(
     "/",
     verifyToken,
-    requireRole("admin"),
+    requireRole("admin", "organizator"),
     async (req, res) => {
         try {
             const {

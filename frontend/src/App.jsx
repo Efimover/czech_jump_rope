@@ -14,6 +14,9 @@ import AthleteEdit from "./pages/AthleteEdit.jsx";
 import MyRegistrations from "./pages/MyRegistrations.jsx";
 
 import Profile from "./pages/Profile.jsx";
+import CreateCompetition from "./pages/CreateCompetition.jsx";
+
+
 
 export default function App() {
     return (
@@ -54,6 +57,8 @@ export default function App() {
                     path="/profile"
                     element={<Profile />}
                 />
+                <Route path="/competitions/new" element={<CreateCompetition />} />
+
 
             </Routes>
         </BrowserRouter>
