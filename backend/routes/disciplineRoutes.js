@@ -4,9 +4,12 @@ import {
     assignDisciplineToCompetition,
     getDisciplinesByCompetition,
     updateDiscipline,
-    deleteDiscipline,
-    getAllDisciplines
+
+    getAllDisciplines, removeDisciplineFromCompetition
 } from "../controllers/disciplineController.js";
+import {verifyToken} from "../middleware/authMiddleware.js";
+import {requireRole} from "../middleware/roleMiddleware.js";
+import {requireCompetitionOwnerOrAdmin, requireCompetitionOwnerOrAdminByCD} from "../middleware/competitionAccess.js";
 
 const router = express.Router();
 
@@ -14,18 +17,24 @@ const router = express.Router();
 router.get("/", getAllDisciplines);
 
 // vytvořit disciplínu
-router.post("/", createDiscipline);
+router.post("/", verifyToken, requireRole("admin", "organizator"), requireCompetitionOwnerOrAdmin, createDiscipline);
 
 // přiřadit disciplínu soutěži
-router.post("/assign", assignDisciplineToCompetition);
+router.post("/assign", verifyToken, requireRole("admin", "organizator"), requireCompetitionOwnerOrAdmin, assignDisciplineToCompetition);
 
 // seznam disciplín pro soutěž
 router.get("/competition/:competitionId", getDisciplinesByCompetition);
 
 // upravit disciplínu
-router.put("/:id", updateDiscipline);
+router.put(
+    "/competition/:competitionDisciplineId",
+    verifyToken,
+    requireRole("admin", "organizator"),
+    requireCompetitionOwnerOrAdminByCD,
+    updateDiscipline
+);
 
-// smazat disciplínu
-router.delete("/:id", deleteDiscipline);
+// smazat disciplínu z souteze
+router.post("/unassign", verifyToken, requireRole("admin", "organizator"), removeDisciplineFromCompetition);
 
 export default router;

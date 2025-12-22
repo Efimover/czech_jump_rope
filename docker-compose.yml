@@ -3,7 +3,7 @@ services:
     build: ./backend
     container_name: cjr-backend
     ports:
-      - "3000:3000"
+      - "3001:3000"
     env_file:
       - ./backend/.env
     depends_on:
@@ -14,8 +14,8 @@ services:
     container_name: cjr-frontend
     ports:
       - "5174:5173"
-    environment:
-      - VITE_API_URL=http://cjr-backend:3000/api
+#    environment:
+#      - VITE_API_URL=http://cjr-backend:3001/api
     depends_on:
       - backend
 

@@ -9,7 +9,7 @@ import { validateBirthYearForCompetition } from "../utils/validation.js";
 
 export const getAthletesByTeam = async (req, res) => {
     const { team_id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     try {
         const result = await pool.query(
@@ -35,7 +35,7 @@ export const getAthletesByTeam = async (req, res) => {
 export const createAthleteForTeam = async (req, res) => {
     const { team_id } = req.params;
     const { first_name, last_name, birth_year, gender } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     try {
         // 1️⃣ ověř, že tým patří uživateli a registrace není submitted
@@ -90,7 +90,7 @@ export const createAthleteForTeam = async (req, res) => {
 
 export const deleteAthlete = async (req, res) => {
     const { athlete_id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     try {
         const result = await pool.query(
@@ -121,7 +121,7 @@ export const deleteAthlete = async (req, res) => {
 
 export const getAthleteById = async (req, res) => {
     const { athlete_id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     const result = await pool.query(
         `
@@ -146,7 +146,7 @@ export const getAthleteById = async (req, res) => {
 export const updateAthlete = async (req, res) => {
     const { athlete_id } = req.params;
     const { first_name, last_name, birth_year, gender } = req.body;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
     // zjisti rok soutěže
     const compRes = await pool.query(
         `

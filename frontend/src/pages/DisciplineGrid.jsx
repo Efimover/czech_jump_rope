@@ -22,7 +22,7 @@ export default function DisciplineGrid({
 
     async function loadDisciplines() {
         const res = await api.get(
-            `/competitions/${competitionId}/disciplines`
+            `/disciplines/competition/${competitionId}`
         );
         setDisciplines(res.data);
     }
@@ -42,7 +42,7 @@ export default function DisciplineGrid({
     const entryMap = useMemo(() => {
         const map = {};
         entries.forEach(e => {
-            map[`${e.athlete_id}_${e.discipline_id}`] = e;
+            map[`${e.athlete_id}_${e.competition_discipline_id}`] = e;
         });
         return map;
     }, [entries]);
@@ -67,12 +67,12 @@ export default function DisciplineGrid({
         return group;
     }
 
-    async function saveEntry({athlete_id, discipline_id}) {
+    async function saveEntry({athlete_id, competition_discipline_id}) {
         try {
             const res = await api.post("/entries/auto-assign", {
                 registration_id: registrationId,
                 athlete_id,
-                discipline_id
+                competition_discipline_id
             });
 
             setEntries(prev => [...prev, res.data]);
@@ -104,7 +104,7 @@ export default function DisciplineGrid({
                 <tr>
                     <th>Závodník</th>
                     {disciplines.map(d => (
-                        <th key={d.discipline_id}>{d.name}</th>
+                        <th key={d.competition_discipline_id}>{d.name}</th>
                     ))}
                 </tr>
                 </thead>
@@ -116,10 +116,10 @@ export default function DisciplineGrid({
 
                         {disciplines.map(d => (
                             <GridCell
-                                key={d.discipline_id}
+                                key={d.competition_discipline_id}
                                 athlete={a}
                                 discipline={d}
-                                entry={entryMap[`${a.athlete_id}_${d.discipline_id}`]}
+                                entry={entryMap[`${a.athlete_id}_${d.competition_discipline_id}`]}
                                 onAdd={saveEntry}
                                 onRemove={deleteEntry}
                                 readOnly={readOnly}

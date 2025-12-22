@@ -12,6 +12,10 @@ export default function DisciplineForm({ onCreated }) {
     });
 
     async function submit() {
+        if (!form.name || !form.type || form.age_categories.length === 0) {
+            alert("Vyplňte všechna povinná pole");
+            return;
+        }
         const res = await api.post("/disciplines", {
             ...form,
             pocet_athletes: form.is_team ? Number(form.pocet_athletes) : null

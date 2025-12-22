@@ -2,7 +2,7 @@ import { pool } from "../db/index.js";
 
 export const getTeamsByRegistration = async (req, res) => {
     const { registration_id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     try {
         const result = await pool.query(

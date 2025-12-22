@@ -1,40 +1,97 @@
-import React from "react";
+import { useContext, useState } from "react";
+import api from "../api/apiClient";
+import { AuthContext } from "../context/AuthContext";
+import EditDisciplineModal from "./EditDisciplineModal";
 
-export default function AssignedDisciplinesList({ disciplines }) {
-    if (!disciplines || disciplines.length === 0) {
-        return <p className="placeholder">Zatím nebyly přidány žádné disciplíny.</p>;
+export default function AssignedDisciplinesList({ disciplines, competitionId, onChange }) {
+    const { user } = useContext(AuthContext);
+    const [editing, setEditing] = useState(null);
+
+    const canEdit =
+        user?.roles?.includes("admin") ||
+        user?.roles?.includes("organizator");
+
+    async function remove(discipline_id) {
+        if (!confirm("Opravdu odebrat disciplínu ze soutěže?")) return;
+
+        try {
+            await api.post("/disciplines/unassign", {
+                competition_id: competitionId,
+                discipline_id
+            });
+            onChange();
+        }catch (err) {
+            const code = err.response?.data?.code;
+
+            if (code === "DISCIPLINE_IN_USE") {
+                alert("Disciplínu nelze odebrat – existují přihlášky.");
+            } else if (code === "REGISTRATION_OPEN") {
+                alert("Po otevření registrací nelze disciplíny měnit.");
+            } else {
+                alert("Nelze odebrat disciplínu.");
+            }
+        }
+
+
     }
 
     return (
-        <div className="assigned-disciplines">
+        <div className="discipline-list">
             {disciplines.map(d => (
                 <div key={d.discipline_id} className="discipline-row">
                     <div>
-                        <strong>{d.name}</strong>{" "}
-                        <span className="discipline-type">({d.type})</span>
+                        <strong>{d.name}</strong>
+                        <div className="muted">
+                            {d.type} • {d.is_team ? `Týmová (${d.pocet_athletes})` : "Individuální"}
+                        </div>
+                        <div className="chips">
+                            {d.age_categories.map(a => (
+                                <span key={a} className="chip">{a}</span>
+                            ))}
+                        </div>
                     </div>
 
-                    <div className="discipline-meta">
-                        {d.is_team ? (
-                            <span>👥 Týmová ({d.pocet_athletes} členů)</span>
-                        ) : (
-                            <span>👤 Individuální</span>
-                        )}
-                    </div>
-
-                    <div className="discipline-ages">
-                        {d.age_categories?.length > 0 ? (
-                            d.age_categories.map((ac, i) => (
-                                <span key={i} className="age-chip">
-                                    {ac}
-                                </span>
-                            ))
-                        ) : (
-                            <span className="empty">Bez věkové kategorie</span>
-                        )}
-                    </div>
+                    {canEdit && (
+                        <div className="row-actions">
+                            <button
+                                className="btn-outline"
+                                onClick={() => {
+                                    if (d.locked) {
+                                        alert("Disciplínu nelze upravit – existují přihlášky");
+                                        return;
+                                    }
+                                    setEditing(d);
+                                }}
+                            >
+                                ✏️
+                            </button>
+                            <button
+                                className="btn-danger"
+                                onClick={() => {
+                                    if (d.locked) {
+                                        alert("Disciplínu nelze odebrat – existují přihlášky");
+                                        return;
+                                    }
+                                    remove(d.discipline_id);
+                                }}
+                            >
+                                🗑
+                            </button>
+                        </div>
+                    )}
                 </div>
             ))}
+
+            {editing && (
+                <EditDisciplineModal
+                    discipline={editing}
+                    onClose={() => setEditing(null)}
+                    onSaved={() => {
+                        setEditing(null);
+                        onChange();
+                    }}
+                />
+            )}
         </div>
     );
 }

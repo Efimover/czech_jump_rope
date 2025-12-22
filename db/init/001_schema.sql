@@ -84,7 +84,11 @@ CREATE TABLE competition_discipline (
                                   id           BIGSERIAL PRIMARY KEY,
                                   competition_id     BIGINT NOT NULL REFERENCES competition(competition_id) ON DELETE CASCADE,
                                   discipline_id BIGINT NOT NULL REFERENCES discipline(discipline_id) ON DELETE CASCADE,
-                                  UNIQUE (competition_id, discipline_id)
+                                  UNIQUE (competition_id, discipline_id),
+                                  name VARCHAR(200),
+                                  type VARCHAR(20),
+                                  is_team BOOLEAN,
+                                  pocet_athletes INT
 );
 
 -- ===== přihlášky =====
@@ -145,6 +149,8 @@ CREATE TABLE team_athlete (
 CREATE TABLE entry (
                        entry_id      BIGSERIAL PRIMARY KEY,
                        registration_id BIGINT NOT NULL REFERENCES registration(registration_id) ON DELETE CASCADE,
+                       competition_discipline_id BIGINT REFERENCES competition_discipline(id) ON DELETE CASCADE,
+
                        athlete_id    BIGINT NOT NULL REFERENCES athlete(athlete_id) ON DELETE CASCADE,
                        discipline_id      BIGINT NOT NULL REFERENCES discipline(discipline_id) ON DELETE CASCADE,
                        team_id       BIGINT NULL REFERENCES team(team_id) ON DELETE CASCADE,

@@ -2,7 +2,7 @@ import { pool } from "../db/index.js";
 
 export const getEntriesByRegistration = async (req, res) => {
     const { registration_id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     try {
         const result = await pool.query(
@@ -23,17 +23,38 @@ export const getEntriesByRegistration = async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 };
+
+
 export const upsertEntry = async (req, res) => {
     const {
         registration_id,
         athlete_id,
-        discipline_id,
+        competition_discipline_id,
         is_selected,
         team_group
     } = req.body;
 
-    const userId = req.user.id;
 
+
+    const userId = req.user.user_id;
+    const cdRes = await pool.query(
+        `
+    SELECT cd.discipline_id, cd.competition_id
+    FROM competition_discipline cd
+    JOIN registration r ON r.competition_id = cd.competition_id
+    WHERE cd.id = $1
+      AND r.registration_id = $2
+    `,
+        [competition_discipline_id, registration_id]
+    );
+
+    if (cdRes.rowCount === 0) {
+        return res.status(400).json({
+            error: "Neplatná disciplína pro tuto soutěž"
+        });
+    }
+
+    const { discipline_id } = cdRes.rows[0];
     try {
         // 1️⃣ ověř registraci
         const reg = await pool.query(
@@ -160,24 +181,26 @@ export const upsertEntry = async (req, res) => {
         // 4️⃣ UPSERT
         const result = await pool.query(
             `
-      INSERT INTO entry (
-        registration_id,
-        athlete_id,
-        discipline_id,
-        team_group,
-        is_selected
-      )
-      VALUES ($1, $2, $3, $4, $5)
-      ON CONFLICT (athlete_id, discipline_id)
-      DO UPDATE SET
-        team_group = EXCLUDED.team_group,
-        is_selected = EXCLUDED.is_selected
-      RETURNING *
-      `,
+                INSERT INTO entry (
+                    registration_id,
+                    athlete_id,
+                    discipline_id,
+                    competition_discipline_id,
+                    team_group,
+                    is_selected
+                )
+                VALUES ($1, $2, $3, $4, $5, $6)
+                ON CONFLICT (athlete_id, competition_discipline_id)
+                    DO UPDATE SET
+                                  team_group = EXCLUDED.team_group,
+                                  is_selected = EXCLUDED.is_selected
+                RETURNING *
+            `,
             [
                 registration_id,
                 athlete_id,
                 discipline_id,
+                competition_discipline_id,   // ✅ CHYBĚLO
                 team_group ?? null,
                 is_selected ?? true
             ]
@@ -194,7 +217,7 @@ export const upsertEntry = async (req, res) => {
 
 export const deleteEntry = async (req, res) => {
     const { entry_id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     try {
         const result = await pool.query(
@@ -225,65 +248,92 @@ export const deleteEntry = async (req, res) => {
 };
 
 export const autoAssignEntry = async (req, res) => {
-    const { registration_id, athlete_id, discipline_id } = req.body;
-    const userId = req.user.id;
+    const { registration_id, athlete_id, competition_discipline_id } = req.body;
+    const userId = req.user.user_id;
 
     try {
-        // ověření registrace
+        // ověř registraci
         const reg = await pool.query(
             `SELECT status FROM registration WHERE registration_id=$1 AND user_id=$2`,
             [registration_id, userId]
         );
+
         if (reg.rowCount === 0 || reg.rows[0].status === "submitted") {
             return res.status(403).json({ error: "Nelze upravovat" });
         }
 
-        const dRes = await pool.query(
-            `SELECT is_team, pocet_athletes FROM discipline WHERE discipline_id=$1`,
-            [discipline_id]
+        // získej discipline_id + validuj soutěž
+        const cdRes = await pool.query(
+            `
+                SELECT d.discipline_id, d.is_team, d.pocet_athletes
+                FROM competition_discipline cd
+                         JOIN discipline d ON d.discipline_id = cd.discipline_id
+                         JOIN registration r ON r.competition_id = cd.competition_id
+                WHERE cd.id = $1
+                  AND r.registration_id = $2
+            `,
+            [competition_discipline_id, registration_id]
         );
-        const discipline = dRes.rows[0];
+
+        if (cdRes.rowCount === 0) {
+            return res.status(400).json({ error: "Neplatná disciplína" });
+        }
+
+        const { discipline_id, is_team, pocet_athletes } = cdRes.rows[0];
 
         // INDIVIDUÁLNÍ
-        if (!discipline.is_team) {
+        if (!is_team) {
             const result = await pool.query(
                 `
-                INSERT INTO entry (registration_id, athlete_id, discipline_id)
-                VALUES ($1,$2,$3)
-                ON CONFLICT (athlete_id, discipline_id) DO NOTHING
-                RETURNING *
+                    INSERT INTO entry (
+                        registration_id,
+                        athlete_id,
+                        discipline_id,
+                        competition_discipline_id
+                    )
+                    VALUES ($1,$2,$3,$4)
+                    ON CONFLICT (athlete_id, competition_discipline_id) DO NOTHING
+                    RETURNING *
                 `,
-                [registration_id, athlete_id, discipline_id]
+                [registration_id, athlete_id, discipline_id, competition_discipline_id]
             );
+
             return res.json(result.rows[0]);
         }
 
-        // TÝMOVÁ – najdi volný mini-tým
+        // TÝMOVÁ – najdi volný tým
         const entriesRes = await pool.query(
             `
-            SELECT team_group, COUNT(*)::int AS count
-            FROM entry
-            WHERE registration_id=$1 AND discipline_id=$2
-            GROUP BY team_group
+                SELECT team_group, COUNT(*)::int AS count
+                FROM entry
+                WHERE registration_id=$1
+                  AND competition_discipline_id=$2
+                GROUP BY team_group
             `,
-            [registration_id, discipline_id]
+            [registration_id, competition_discipline_id]
         );
 
         const counts = {};
         entriesRes.rows.forEach(r => (counts[r.team_group] = r.count));
 
         let group = 1;
-        while ((counts[group] || 0) >= discipline.pocet_athletes) {
+        while ((counts[group] || 0) >= pocet_athletes) {
             group++;
         }
 
         const result = await pool.query(
             `
-            INSERT INTO entry (registration_id, athlete_id, discipline_id, team_group)
-            VALUES ($1,$2,$3,$4)
-            RETURNING *
+                INSERT INTO entry (
+                    registration_id,
+                    athlete_id,
+                    discipline_id,
+                    competition_discipline_id,
+                    team_group
+                )
+                VALUES ($1,$2,$3,$4,$5)
+                RETURNING *
             `,
-            [registration_id, athlete_id, discipline_id, group]
+            [registration_id, athlete_id, discipline_id, competition_discipline_id, group]
         );
 
         res.json(result.rows[0]);

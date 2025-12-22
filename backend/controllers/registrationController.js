@@ -2,7 +2,7 @@ import { pool } from "../db/index.js";
 export const getRegistration = async (req, res) => {
     try {
         const { registration_id } = req.params;
-        const userId = req.user.id;
+        const userId = req.user.user_id;
 
         const reg = await pool.query(
             `SELECT r.*, c.name AS competition_name
@@ -29,7 +29,7 @@ export const getRegistration = async (req, res) => {
 export const createRegistration = async (req, res) => {
     try {
         const { competition_id, contact_name, contact_email } = req.body;
-        const userId = req.user.id;
+        const userId = req.user.user_id;
 
         // 1️⃣ Už existuje přihláška?
         const existing = await pool.query(
@@ -108,7 +108,7 @@ export const createRegistration = async (req, res) => {
 
 export const submitRegistration = async (req, res) => {
     const { registration_id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     try {
         // 1️⃣ ověř vlastnictví a stav
@@ -222,7 +222,7 @@ export const submitRegistration = async (req, res) => {
 
 export const deleteRegistration = async (req, res) => {
     const { registration_id } = req.params;
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     try {
         const result = await pool.query(
@@ -250,7 +250,7 @@ export const deleteRegistration = async (req, res) => {
     }
 };
 export const getMyRegistrations = async (req, res) => {
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     try {
         const result = await pool.query(

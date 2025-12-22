@@ -22,7 +22,7 @@ router.post(
                 location
             } = req.body;
 
-            const owner_id = req.user.id; // z tokenu
+            const owner_id = req.user.user_id; // z tokenu
 
             const result = await pool.query(
                 `

@@ -1,42 +1,51 @@
-import {useEffect, useState} from "react";
-import api from "../api/apiClient.js";
+import { useEffect, useState } from "react";
+import api from "../api/apiClient";
 import Modal from "./Modal.jsx";
 
-export default function CreateDisciplineModal({ competitionId, onClose, onCreated }) {
+export default function EditDisciplineModal({ discipline, onClose, onSaved }) {
     const [form, setForm] = useState({
-        name: "",
-        type: "",
-        is_team: false,
-        pocet_athletes: null,
+        name: discipline.name,
+        type: discipline.type,
+        is_team: discipline.is_team,
+        pocet_athletes: discipline.pocet_athletes,
         age_categories: []
     });
 
     const [categories, setCategories] = useState([]);
 
     useEffect(() => {
-        api.get("/age-categories").then(res => setCategories(res.data));
+        api.get("/age-categories").then(res => {
+            setCategories(res.data);
+
+            const selected = res.data
+                .filter(c => discipline.age_categories.includes(c.name))
+                .map(c => c.age_category_id);
+
+            setForm(f => ({ ...f, age_categories: selected }));
+        });
     }, []);
 
-    async function submit() {
-        const res = await api.post("/disciplines", form);
-        if (!form.name || !form.type || form.age_categories.length === 0) {
-            alert("Vyplňte všechna povinná pole");
-            return;
-        }
+    async function save() {
+        await api.put(
+            `/disciplines/competition/${discipline.competition_discipline_id}`, {
+                ...form,
+                pocet_athletes: form.is_team ? form.pocet_athletes : null
+            });
 
-        await api.post("/disciplines/assign", {
-            competition_id: competitionId,
-            discipline_id: res.data.discipline_id
-        });
-
-        onCreated();
-        onClose();
+        onSaved();
+    }
+    if (discipline.locked) {
+        return (
+            <Modal>
+                <p>Disciplínu nelze upravit – soutěž již má přihlášky.</p>
+            </Modal>
+        );
     }
 
     return (
-        <Modal title="Nová disciplína">
+
+        <Modal title="Upravit disciplínu" onClose={onClose}>
             <input
-                placeholder="Název"
                 value={form.name}
                 onChange={e => setForm({ ...form, name: e.target.value })}
             />
@@ -45,12 +54,11 @@ export default function CreateDisciplineModal({ competitionId, onClose, onCreate
                 value={form.type}
                 onChange={e => setForm({ ...form, type: e.target.value })}
             >
-                <option value="">Typ</option>
                 <option value="speed">Speed</option>
                 <option value="freestyle">Freestyle</option>
                 <option value="double_dutch">Double Dutch</option>
                 <option value="chinese_wheel">Chinese Wheel</option>
-                <option value="other">Jiný</option>
+                <option value="other">Jiné</option>
             </select>
 
             <label>
@@ -67,10 +75,12 @@ export default function CreateDisciplineModal({ competitionId, onClose, onCreate
             {form.is_team && (
                 <input
                     type="number"
-                    placeholder="Počet atletů v týmu"
                     value={form.pocet_athletes || ""}
                     onChange={e =>
-                        setForm({ ...form, pocet_athletes: Number(e.target.value) })
+                        setForm({
+                            ...form,
+                            pocet_athletes: Number(e.target.value)
+                        })
                     }
                 />
             )}
@@ -90,12 +100,12 @@ export default function CreateDisciplineModal({ competitionId, onClose, onCreate
                             }))
                         }
                     />
-                    {c.name} ({c.min_age}–{c.max_age ?? "∞"})
+                    {c.name}
                 </label>
             ))}
 
-            <button onClick={submit} className="btn-primary">
-                ✔ Vytvořit disciplínu
+            <button className="btn-primary" onClick={save}>
+                💾 Uložit změny
             </button>
         </Modal>
     );

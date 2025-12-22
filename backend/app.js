@@ -17,7 +17,6 @@ app.use(express.json());
 
 
 app.use("/api/users", userRoutes);
-app.use("/api/auth", userRoutes);
 app.use("/api/competitions", competitionRoutes);
 app.use("/api/disciplines", disciplineRoutes);
 app.use("/api/age-categories", ageCategoryRoutes);
@@ -26,5 +25,21 @@ app.use("/api/athletes", athleteRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/entries", entryRoutes);
 
+app.use((err, req, res, next) => {
+    console.error("🔥 UNHANDLED ERROR:", err);
+    res.status(500).json({ error: "Internal server error" });
+});
 
 export default app;
+
+
+
+// import express from "express";
+//
+// const app = express();
+//
+// app.get("/api/health", (req, res) => {
+//     res.json({ ok: true });
+// });
+//
+// export default app;

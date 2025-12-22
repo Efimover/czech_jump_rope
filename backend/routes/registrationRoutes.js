@@ -30,7 +30,7 @@ const router = express.Router();
 router.get("/check", verifyToken, async (req, res) => {
     try {
         const { competition_id } = req.query;
-        const userId = req.user.id;
+        const userId = req.user.user_id;
 
         if (!competition_id) {
             return res.status(400).json({ error: "Missing competition_id" });

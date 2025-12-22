@@ -132,7 +132,7 @@ export const getProfile = async (req, res) => {
 };
 
 export const getMe = async (req, res) => {
-    const userId = req.user.id;
+    const userId = req.user.user_id;
 
     const result = await pool.query(
         `
@@ -156,7 +156,7 @@ export const getMe = async (req, res) => {
 };
 
 export const updateMe = async (req, res) => {
-    const userId = req.user.id;
+    const userId = req.user.user_id;
     const { first_name, last_name, date_birth } = req.body;
 
     const result = await pool.query(
@@ -258,7 +258,7 @@ export const deleteUser = async (req, res) => {
 
 export const changePassword = async (req, res) => {
     try {
-        const userId = req.user.id;
+        const userId = req.user.user_id;
         const { currentPassword, newPassword } = req.body;
 
         // 1️⃣ validace vstupu

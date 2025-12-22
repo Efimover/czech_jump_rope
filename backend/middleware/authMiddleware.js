@@ -25,25 +25,25 @@ export const verifyToken = async (req, res, next) => {
         }
 
         const rolesResult = await pool.query(
-            `SELECT r.name
-             FROM role_user ru
-                      JOIN role r ON ru.role_id = r.role_id
-             WHERE ru.user_id = $1`,
+            `
+            SELECT r.name
+            FROM role_user ru
+            JOIN role r ON ru.role_id = r.role_id
+            WHERE ru.user_id = $1
+            `,
             [userId]
         );
 
         req.user = {
-            id: userId,
+            user_id: userId,
             email: userResult.rows[0].email,
             roles: rolesResult.rows.map(r => r.name)
         };
-        console.log("Roles found for user", userId, ":", rolesResult.rows);
 
         next();
+
     } catch (err) {
         console.error("verifyToken error:", err);
         return res.status(401).json({ error: "Unauthorized: invalid token" });
-
     }
-
 };

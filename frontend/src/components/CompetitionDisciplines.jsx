@@ -21,15 +21,20 @@ export default function CompetitionDisciplines({ competitionId }) {
 
     useEffect(() => {
         reload();
-        api.get(`/disciplines/competition/${competitionId}`)
-            .then(res => setDisciplines(res.data));
     }, [competitionId]);
+
+
 
     return (
         <section className="section-card">
             <h2>Disciplíny soutěže</h2>
 
-            <AssignedDisciplinesList disciplines={disciplines} />
+            <AssignedDisciplinesList
+                disciplines={disciplines}s
+                competitionId={competitionId}
+                canEdit={canEdit}
+                onChange={reload}
+            />
 
             <div className="actions-row">
                 {canEdit && (
