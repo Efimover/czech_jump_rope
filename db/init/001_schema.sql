@@ -50,7 +50,9 @@ CREATE TABLE competition (
                              reg_start      DATE NOT NULL,
                              reg_end        DATE NOT NULL,
                              created_at     TIMESTAMP WITH TIME ZONE DEFAULT now(),
-                             location VARCHAR(255)
+                             location VARCHAR(255),
+                             referee_id BIGINT REFERENCES referee(referee_id) ON DELETE SET NULL,
+                             updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
 CREATE TABLE age_category (
@@ -158,7 +160,7 @@ CREATE TABLE entry (
                        is_selected   BOOLEAN NOT NULL DEFAULT TRUE, -- jestli je vybrán/škrtnut (X)
                        notes         TEXT,
                        created_at    TIMESTAMP WITH TIME ZONE DEFAULT now(),
-                       UNIQUE (athlete_id, discipline_id) -- jedinečná účast jedince v jedné události
+                       UNIQUE (athlete_id, competition_discipline_id) -- jedinečná účast jedince v jedné události
 );
 
 -- Pokud je event.team_event = FALSE, pak team_group a team_id by měly být NULL.
@@ -170,7 +172,8 @@ CREATE INDEX idx_user_email ON user_account (email);
 CREATE INDEX idx_competition_owner ON competition (owner_id);
 CREATE INDEX idx_event_comp ON competition_discipline (competition_id);
 CREATE INDEX idx_team_reg ON team (registration_id);
-CREATE INDEX idx_entry_event ON entry (discipline_id);
 CREATE INDEX idx_entry_athlete ON entry (athlete_id);
-
+CREATE INDEX idx_entry_registration ON entry (registration_id);
+CREATE INDEX idx_entry_competition_discipline ON entry (competition_discipline_id);
+CREATE INDEX idx_entry_athlete ON entry (athlete_id);
 

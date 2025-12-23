@@ -19,20 +19,45 @@ router.post(
                 end_date,
                 reg_start,
                 reg_end,
-                location
+                location,
+                referee_id
             } = req.body;
 
             const owner_id = req.user.user_id; // z tokenu
+            if (referee_id) {
+                const ref = await pool.query(
+                    "SELECT 1 FROM referee WHERE referee_id = $1",
+                    [referee_id]
+                );
+                if (ref.rowCount === 0) {
+                    return res.status(400).json({ error: "Neplatný rozhodčí" });
+                }
+            }
+
+            const refereeId = referee_id ?? null;
 
             const result = await pool.query(
                 `
-                INSERT INTO competition (
-                    owner_id, name, description, start_date, end_date, reg_start, reg_end,location
-                )
-                VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-                RETURNING *
-                `,
-                [owner_id, name, description, start_date, end_date, reg_start, reg_end, location]
+  INSERT INTO competition (
+      owner_id, name, description,
+      start_date, end_date,
+      reg_start, reg_end,
+      location, referee_id
+  )
+  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+  RETURNING *
+  `,
+                [
+                    owner_id,
+                    name,
+                    description,
+                    start_date,
+                    end_date,
+                    reg_start,
+                    reg_end,
+                    location,
+                    refereeId
+                ]
             );
 
             return res.status(201).json({
@@ -50,13 +75,19 @@ router.post(
 router.get("/:id", async (req, res) => {
     try {
         const result = await pool.query(`
-            SELECT 
+            SELECT
                 c.*,
                 u.first_name AS owner_first_name,
                 u.last_name AS owner_last_name,
-                u.email AS owner_email
+
+                r.referee_id,
+                r.first_name AS referee_first_name,
+                r.last_name AS referee_last_name,
+                r.category AS referee_category
+
             FROM competition c
-            JOIN user_account u ON u.user_id = c.owner_id
+                     JOIN user_account u ON u.user_id = c.owner_id
+                     LEFT JOIN referee r ON r.referee_id = c.referee_id
             WHERE c.competition_id = $1
         `, [req.params.id]);
 
@@ -174,5 +205,145 @@ router.get("/", async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 });
+
+router.put(
+    "/:id",
+    verifyToken,
+    requireRole("admin", "organizator"),
+    async (req, res) => {
+        try {
+            const competitionId = req.params.id;
+            const userId = req.user.user_id;
+
+            const {
+                name,
+                description,
+                location,
+                start_date,
+                end_date,
+                reg_start,
+                reg_end,
+                referee_id
+            } = req.body;
+
+            /* =====================================================
+               1️⃣ Načti existující soutěž
+            ===================================================== */
+            const existingRes = await pool.query(
+                `
+                    SELECT
+                        owner_id,
+                        start_date,
+                        end_date,
+                        reg_start,
+                        reg_end
+                    FROM competition
+                    WHERE competition_id = $1
+                `,
+                [competitionId]
+            );
+
+            if (existingRes.rowCount === 0) {
+                return res.status(404).json({ error: "Soutěž nenalezena" });
+            }
+
+            const existing = existingRes.rows[0];
+
+            /* =====================================================
+               2️⃣ Ověř oprávnění (organizátor jen své soutěže)
+            ===================================================== */
+            const isAdmin = req.user.roles?.includes("admin");
+            if (!isAdmin && existing.owner_id !== userId) {
+                return res.status(403).json({ error: "Nepovolený přístup" });
+            }
+
+            /* =====================================================
+               3️⃣ Pomocná funkce pro porovnání dat
+            ===================================================== */
+            const sameDate = (a, b) =>
+                new Date(a).toISOString().slice(0, 10) ===
+                new Date(b).toISOString().slice(0, 10);
+
+            const now = new Date();
+            const registrationOpen =
+                now >= new Date(existing.reg_start) &&
+                now <= new Date(existing.reg_end);
+
+            const datesChanged =
+                !sameDate(existing.start_date, start_date) ||
+                !sameDate(existing.end_date, end_date) ||
+                !sameDate(existing.reg_start, reg_start) ||
+                !sameDate(existing.reg_end, reg_end);
+
+            /* =====================================================
+               4️⃣ Blokace změny termínů po otevření registrace
+            ===================================================== */
+            if (registrationOpen && datesChanged) {
+                return res.status(400).json({
+                    code: "REGISTRATION_OPEN",
+                    error: "Po otevření registrací nelze měnit termíny"
+                });
+            }
+
+            /* =====================================================
+               5️⃣ Validace rozhodčího (pokud je zadán)
+            ===================================================== */
+            if (referee_id) {
+                const refCheck = await pool.query(
+                    `SELECT 1 FROM referee WHERE referee_id = $1`,
+                    [referee_id]
+                );
+
+                if (refCheck.rowCount === 0) {
+                    return res.status(400).json({
+                        error: "Neplatný rozhodčí"
+                    });
+                }
+            }
+
+            /* =====================================================
+               6️⃣ UPDATE soutěže
+            ===================================================== */
+            const updateRes = await pool.query(
+                `
+                    UPDATE competition
+                    SET
+                        name = $1,
+                        description = $2,
+                        location = $3,
+                        start_date = $4,
+                        end_date = $5,
+                        reg_start = $6,
+                        reg_end = $7,
+                        referee_id = $8,
+                        updated_at = NOW()
+                    WHERE competition_id = $9
+                    RETURNING *
+                `,
+                [
+                    name,
+                    description,
+                    location,
+                    start_date,
+                    end_date,
+                    reg_start,
+                    reg_end,
+                    referee_id || null,
+                    competitionId
+                ]
+            );
+
+            res.json({
+                message: "Soutěž byla úspěšně upravena",
+                competition: updateRes.rows[0]
+            });
+
+        } catch (err) {
+            console.error("ERROR updating competition:", err);
+            res.status(500).json({ error: "Server error" });
+        }
+    }
+);
+
 
 export default router;

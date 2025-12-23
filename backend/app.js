@@ -9,6 +9,7 @@ import registrationRoutes from "./routes/registrationRoutes.js";
 import athleteRoutes from "./routes/athleteRoutes.js";
 import teamRoutes from "./routes/teamRoutes.js";
 import entryRoutes from "./routes/entryRoutes.js";
+import refereeRoutes from "./routes/refereeRoutes.js";
 
 const app = express();
 
@@ -24,6 +25,7 @@ app.use("/api/registrations", registrationRoutes);
 app.use("/api/athletes", athleteRoutes);
 app.use("/api/teams", teamRoutes);
 app.use("/api/entries", entryRoutes);
+app.use("/api/referees", refereeRoutes);
 
 app.use((err, req, res, next) => {
     console.error("🔥 UNHANDLED ERROR:", err);

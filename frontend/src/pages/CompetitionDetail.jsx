@@ -70,6 +70,14 @@ export default function CompetitionDetail() {
                         <strong>Lokace:</strong>
                         <span>{competition.location || "Neuvedeno"}</span>
                     </div>
+                    <div className="detail-item">
+                        <strong>Rozhodčí:</strong>
+                        <span>
+                            {competition.referee_first_name
+                                ? `${competition.referee_first_name} ${competition.referee_last_name} (${competition.referee_category})`
+                                : "Neuveden"}
+                        </span>
+                    </div>
 
                     <div className="detail-item">
                         <strong>Organizátor:</strong>
