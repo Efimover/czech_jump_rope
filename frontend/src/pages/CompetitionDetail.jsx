@@ -132,7 +132,7 @@ export default function CompetitionDetail() {
                 </div>
 
                 <button onClick={() => navigate(`/competitions/${id}/edit`)}>
-                    ⚙ Správa disciplín
+                    ⚙ Správa Souteží
                 </button>
             </div>
         </div>

@@ -5,6 +5,9 @@ import {
     updateCompetition,
     getReferees
 } from "../api/competitionApi";
+import CompetitionDisciplines from "../components/CompetitionDisciplines.jsx";
+
+import "../styles/competitionEdit.css";
 
 export default function CompetitionEdit() {
     const { competitionId } = useParams();
@@ -13,6 +16,11 @@ export default function CompetitionEdit() {
     const [form, setForm] = useState(null);
     const [referees, setReferees] = useState([]);
     const [saving, setSaving] = useState(false);
+
+    const isRegistrationOpen =
+        form &&
+        new Date(form.reg_start) <= new Date() &&
+        new Date() <= new Date(form.reg_end);
 
     // 🔹 načti soutěž + rozhodčí
     useEffect(() => {
@@ -90,9 +98,17 @@ export default function CompetitionEdit() {
                 />
 
                 <label>Datum konání</label>
+                {isRegistrationOpen && (
+                    <p className="info-box">
+                        🔒 Registrace je otevřená – termíny nelze měnit.
+                    </p>
+                )}
+
                 <input
                     type="date"
                     value={form.start_date}
+                    disabled={isRegistrationOpen}
+
                     onChange={e =>
                         setForm({ ...form, start_date: e.target.value })
                     }
@@ -100,6 +116,7 @@ export default function CompetitionEdit() {
                 <input
                     type="date"
                     value={form.end_date}
+                    disabled={isRegistrationOpen}
                     onChange={e =>
                         setForm({ ...form, end_date: e.target.value })
                     }
@@ -109,6 +126,8 @@ export default function CompetitionEdit() {
                 <input
                     type="date"
                     value={form.reg_start}
+                    disabled={isRegistrationOpen}
+
                     onChange={e =>
                         setForm({ ...form, reg_start: e.target.value })
                     }
@@ -116,6 +135,7 @@ export default function CompetitionEdit() {
                 <input
                     type="date"
                     value={form.reg_end}
+                    disabled={isRegistrationOpen}
                     onChange={e =>
                         setForm({ ...form, reg_end: e.target.value })
                     }
@@ -148,6 +168,7 @@ export default function CompetitionEdit() {
                     {saving ? "Ukládám…" : "✔ Uložit změny"}
                 </button>
             </div>
+            <CompetitionDisciplines competitionId={competitionId} />
         </div>
     );
 }
