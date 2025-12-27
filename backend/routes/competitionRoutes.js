@@ -1,5 +1,6 @@
 import express from "express";
 import { pool } from "../db/index.js";
+import PDFDocument from "pdfkit";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
 
@@ -345,5 +346,115 @@ router.put(
     }
 );
 
+
+router.get(
+    "/:id/export/pdf",
+    verifyToken,
+    requireRole("admin", "organizator"),
+    async (req, res) => {
+        const competitionId = req.params.id;
+        const userId = req.user.user_id;
+
+        try {
+            // 🔒 kontrola oprávnění (organizátor = vlastník)
+            const compRes = await pool.query(
+                `
+                SELECT *
+                FROM competition
+                WHERE competition_id = $1
+                  AND (owner_id = $2 OR $3 = ANY(
+                        SELECT r.name
+                        FROM role_user ru
+                        JOIN role r ON r.role_id = ru.role_id
+                        WHERE ru.user_id = $2
+                  ))
+                `,
+                [competitionId, userId, "admin"]
+            );
+
+            if (compRes.rowCount === 0) {
+                return res.status(403).json({ error: "Nepovolený přístup" });
+            }
+
+            const competition = compRes.rows[0];
+
+
+            const dataRes = await pool.query(
+                `
+                SELECT
+                    r.registration_id,
+                    t.name AS team_name,
+                    a.first_name,
+                    a.last_name,
+                    a.birth_year,
+                    d.name AS discipline_name,
+                    e.team_group
+                FROM registration r
+                JOIN team t ON t.registration_id = r.registration_id
+                JOIN team_athlete ta ON ta.team_id = t.team_id
+                JOIN athlete a ON a.athlete_id = ta.athlete_id
+                LEFT JOIN entry e
+                    ON e.athlete_id = a.athlete_id
+                   AND e.registration_id = r.registration_id
+                LEFT JOIN discipline d ON d.discipline_id = e.discipline_id
+                WHERE r.competition_id = $1
+                ORDER BY t.name, a.last_name
+                `,
+                [competitionId]
+            );
+            // PDF
+            const doc = new PDFDocument({ margin: 40, size: "A4" });
+
+            res.setHeader("Content-Type", "application/pdf");
+            res.setHeader(
+                "Content-Disposition",
+                `attachment; filename=prihlasky_${competition.name}.pdf`
+            );
+
+            doc.pipe(res);
+
+            // HLAVIČKA
+            doc
+                .fontSize(18)
+                .text(`Přihlášky – ${competition.name}`, { align: "center" })
+                .moveDown();
+
+            doc
+                .fontSize(12)
+                .text(`Datum: ${competition.start_date} – ${competition.end_date}`)
+                .text(`Místo: ${competition.location || "neuvedeno"}`)
+                .moveDown(2);
+
+            // 📋 OBSAH
+            let currentTeam = null;
+
+            dataRes.rows.forEach(row => {
+                if (row.team_name !== currentTeam) {
+                    currentTeam = row.team_name;
+                    doc
+                        .moveDown()
+                        .fontSize(14)
+                        .text(`Tým: ${currentTeam}`, { underline: true });
+                }
+
+                doc
+                    .fontSize(11)
+                    .text(
+                        `• ${row.first_name} ${row.last_name} (${row.birth_year})` +
+                        (row.discipline_name
+                            ? ` – ${row.discipline_name}` +
+                            (row.team_group ? ` (tým ${row.team_group})` : "")
+                            : "")
+                    );
+            });
+
+            doc.end();
+
+        } catch (err) {
+            console.error("PDF export error:", err);
+            res.status(500).json({ error: "Chyba při generování PDF" });
+        }
+    }
+);
 
 export default router;

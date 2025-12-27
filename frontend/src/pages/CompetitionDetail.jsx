@@ -53,6 +53,48 @@ export default function CompetitionDetail() {
             )
         );
 
+    const canExport =
+        user &&
+        (
+            user.roles.includes("admin") ||
+            (user.roles.includes("organizator") &&
+                user.user_id === competition.owner_id)
+        );
+
+    async function exportPdf() {
+        try {
+            const token = localStorage.getItem("token");
+
+            const res = await fetch(
+                `${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/competitions/${id}/export/pdf`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (!res.ok) {
+                throw new Error("Export se nezdařil");
+            }
+
+            const blob = await res.blob();
+            const url = window.URL.createObjectURL(blob);
+
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `prihlasky_${competition.name}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+
+            window.URL.revokeObjectURL(url);
+
+        } catch (err) {
+            console.error("PDF export error:", err);
+            alert("Nepodařilo se exportovat PDF");
+        }
+    }
 
 
     return (
@@ -148,6 +190,12 @@ export default function CompetitionDetail() {
                         onClick={() => navigate(`/competitions/${id}/edit`)}
                     >
                         ⚙ Správa soutěže
+                    </button>
+                )}
+
+                {canExport && (
+                    <button className="btn-outline" onClick={exportPdf}>
+                        📄 Export přihlášek (PDF)
                     </button>
                 )}
             </div>
