@@ -1,6 +1,8 @@
 import express from "express";
 import { pool } from "../db/index.js";
 import PDFDocument from "pdfkit";
+import fs from "fs";
+import path from "path";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
 
@@ -347,6 +349,8 @@ router.put(
 );
 
 
+//EXPORT
+
 router.get(
     "/:id/export/pdf",
     verifyToken,
@@ -378,7 +382,7 @@ router.get(
 
             const competition = compRes.rows[0];
 
-
+            // 📥 DATA – registrace → týmy → atleti → disciplíny
             const dataRes = await pool.query(
                 `
                 SELECT
@@ -402,7 +406,8 @@ router.get(
                 `,
                 [competitionId]
             );
-            // PDF
+
+            //  PDF
             const doc = new PDFDocument({ margin: 40, size: "A4" });
 
             res.setHeader("Content-Type", "application/pdf");
@@ -410,10 +415,13 @@ router.get(
                 "Content-Disposition",
                 `attachment; filename=prihlasky_${competition.name}.pdf`
             );
+            doc.font(
+                path.resolve("assets/fonts/Roboto-Regular.ttf")
+            );
 
             doc.pipe(res);
 
-            // HLAVIČKA
+            //  HLAVIČKA
             doc
                 .fontSize(18)
                 .text(`Přihlášky – ${competition.name}`, { align: "center" })
@@ -456,5 +464,6 @@ router.get(
         }
     }
 );
+
 
 export default router;
