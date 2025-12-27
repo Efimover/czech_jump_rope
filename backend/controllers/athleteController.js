@@ -145,18 +145,26 @@ export const getAthleteById = async (req, res) => {
 
 export const updateAthlete = async (req, res) => {
     const { athlete_id } = req.params;
-    const { first_name, last_name, birth_year, gender } = req.body;
+    const { first_name, last_name, birth_year, gender, registration_id } = req.body;
     const userId = req.user.user_id;
     // zjisti rok soutěže
     const compRes = await pool.query(
         `
-            SELECT EXTRACT(YEAR FROM start_date)::int AS year
-            FROM competition
-                     JOIN registration r ON r.competition_id = competition.competition_id
-            WHERE r.registration_id = $1
+            SELECT EXTRACT(YEAR FROM c.start_date)::int AS year
+            FROM athlete a
+                     JOIN team_athlete ta ON ta.athlete_id = a.athlete_id
+                     JOIN team t ON t.team_id = ta.team_id
+                     JOIN registration r ON r.registration_id = t.registration_id
+                     JOIN competition c ON c.competition_id = r.competition_id
+            WHERE a.athlete_id = $1
+              AND r.user_id = $2
         `,
-        [registration_id]
+        [athlete_id, userId]
     );
+
+    if (compRes.rowCount === 0) {
+        return res.status(404).json({ error: "Registrace nenalezena" });
+    }
 
     const competitionYear = compRes.rows[0].year;
 

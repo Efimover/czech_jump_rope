@@ -1,5 +1,15 @@
 import { pool } from "../db/index.js";
 
+import {
+    verifyEditableRegistration,
+    getValidDiscipline
+} from "../services/entryService.js";
+
+import {
+    validateAgeCategory,
+    validateTeamCapacity
+} from "../utils/entryValidation.js";
+
 export const getEntriesByRegistration = async (req, res) => {
     const { registration_id } = req.params;
     const userId = req.user.user_id;
@@ -34,183 +44,59 @@ export const upsertEntry = async (req, res) => {
         team_group
     } = req.body;
 
-
-
-    const userId = req.user.user_id;
-    const cdRes = await pool.query(
-        `
-    SELECT cd.discipline_id, cd.competition_id
-    FROM competition_discipline cd
-    JOIN registration r ON r.competition_id = cd.competition_id
-    WHERE cd.id = $1
-      AND r.registration_id = $2
-    `,
-        [competition_discipline_id, registration_id]
-    );
-
-    if (cdRes.rowCount === 0) {
-        return res.status(400).json({
-            error: "Neplatná disciplína pro tuto soutěž"
-        });
-    }
-
-    const { discipline_id } = cdRes.rows[0];
     try {
-        // 1️⃣ ověř registraci
-        const reg = await pool.query(
-            `
-      SELECT status
-      FROM registration
-      WHERE registration_id = $1 AND user_id = $2
-      `,
-            [registration_id, userId]
-        );
+        await verifyEditableRegistration(registration_id, req.user.user_id);
 
-        if (reg.rowCount === 0) {
-            return res.status(403).json({ error: "Nepovolený přístup" });
-        }
+        const { discipline_id, is_team, pocet_athletes } =
+            await getValidDiscipline(competition_discipline_id, registration_id);
 
-        if (reg.rows[0].status === "submitted") {
-            return res.status(403).json({
-                error: "Odeslanou přihlášku nelze upravovat"
-            });
-        }
+        if (!is_team && team_group !== null)
+            return res.status(400).json({ error: "Individuální disciplína nesmí mít tým" });
 
-        // 2️⃣ načíst disciplínu
-        const disciplineRes = await pool.query(
-            `
-      SELECT is_team, pocet_athletes
-      FROM discipline
-      WHERE discipline_id = $1
-      `,
-            [discipline_id]
-        );
+        if (is_team && !team_group)
+            return res.status(400).json({ error: "Týmová disciplína vyžaduje číslo týmu" });
 
-        if (disciplineRes.rowCount === 0) {
-            return res.status(404).json({ error: "Disciplína neexistuje" });
-        }
+        await validateAgeCategory(athlete_id, registration_id, discipline_id);
 
-        const { is_team, pocet_athletes } = disciplineRes.rows[0];
-
-        // 3️⃣ validace
-        if (!is_team && team_group !== null) {
-            return res.status(400).json({
-                error: "Individuální disciplína nesmí mít tým"
-            });
-        }
-
-        if (is_team && !team_group) {
-            return res.status(400).json({
-                error: "Týmová disciplína vyžaduje číslo týmu"
-            });
-        }
-        // kontrola počtu členů týmu
-        if (is_team && team_group !== null) {
-            const countRes = await pool.query(
-                `
-    SELECT COUNT(*)::int AS count
-    FROM entry
-    WHERE registration_id = $1
-      AND discipline_id = $2
-      AND team_group = $3
-      AND athlete_id != $4
-    `,
-                [registration_id, discipline_id, team_group, athlete_id]
+        if (is_team && team_group)
+            await validateTeamCapacity(
+                registration_id,
+                discipline_id,
+                team_group,
+                athlete_id,
+                pocet_athletes
             );
 
-            if (countRes.rows[0].count >= pocet_athletes) {
-                return res.status(400).json({
-                    code: "TEAM_FULL",
-                    error: `Tým je již plný (max ${pocet_athletes})`
-                });
-            }
-        }
-
-        const athleteRes = await pool.query(
-            `
-                SELECT birth_year
-                FROM athlete
-                WHERE athlete_id = $1
-            `,
-            [athlete_id]
-        );
-        if (athleteRes.rowCount === 0) {
-            return res.status(404).json({
-                error: "Závodník neexistuje"
-            });
-        }
-
-        const birthYear = athleteRes.rows[0].birth_year;
-        const compRes = await pool.query(
-            `
-                SELECT EXTRACT(YEAR FROM start_date)::int AS year
-                FROM competition
-                         JOIN registration r ON r.competition_id = competition.competition_id
-                WHERE r.registration_id = $1
-            `,
-            [registration_id]
-        );
-
-        const competitionYear = compRes.rows[0].year;
-        const age = competitionYear - birthYear;
-        const catRes = await pool.query(
-            `
-  SELECT ac.min_age, ac.max_age
-  FROM discipline_age_category dac
-  JOIN age_category ac ON ac.age_category_id = dac.age_category_id
-  WHERE dac.discipline_id = $1
-  `,
-            [discipline_id]
-        );
-        let valid = true;
-
-        if (catRes.rows.length > 0) {
-            valid = catRes.rows.some(c =>
-                age >= c.min_age &&
-                (c.max_age === null || age <= c.max_age)
-            );
-        }
-
-        if (!valid) {
-            return res.status(400).json({
-                code: "AGE_MISMATCH",
-                error: "Závodník nesplňuje věkovou kategorii disciplíny"
-            });
-        }
-
-        // 4️⃣ UPSERT
         const result = await pool.query(
             `
-                INSERT INTO entry (
-                    registration_id,
-                    athlete_id,
-                    discipline_id,
-                    competition_discipline_id,
-                    team_group,
-                    is_selected
-                )
-                VALUES ($1, $2, $3, $4, $5, $6)
-                ON CONFLICT (athlete_id, competition_discipline_id)
-                    DO UPDATE SET
-                                  team_group = EXCLUDED.team_group,
-                                  is_selected = EXCLUDED.is_selected
-                RETURNING *
+            INSERT INTO entry (
+                registration_id,
+                athlete_id,
+                discipline_id,
+                competition_discipline_id,
+                team_group,
+                is_selected
+            )
+            VALUES ($1,$2,$3,$4,$5,$6)
+            ON CONFLICT (athlete_id, competition_discipline_id)
+            DO UPDATE SET
+                team_group = EXCLUDED.team_group,
+                is_selected = EXCLUDED.is_selected
+            RETURNING *
             `,
             [
                 registration_id,
                 athlete_id,
                 discipline_id,
-                competition_discipline_id,   // ✅ CHYBĚLO
+                competition_discipline_id,
                 team_group ?? null,
                 is_selected ?? true
             ]
         );
 
         res.json(result.rows[0]);
-
-    } catch (err) {
-        console.error("upsertEntry error:", err);
-        res.status(500).json({ error: "Server error" });
+    } catch (e) {
+        res.status(e.status || 500).json({ error: e.msg || "Server error", code: e.code });
     }
 };
 
@@ -280,6 +166,59 @@ export const autoAssignEntry = async (req, res) => {
         }
 
         const { discipline_id, is_team, pocet_athletes } = cdRes.rows[0];
+
+        // 🔹 načti závodníka
+        const athleteRes = await pool.query(
+            `SELECT birth_year FROM athlete WHERE athlete_id = $1`,
+            [athlete_id]
+        );
+
+        if (athleteRes.rowCount === 0) {
+            return res.status(404).json({ error: "Závodník neexistuje" });
+        }
+
+        const birthYear = athleteRes.rows[0].birth_year;
+
+// 🔹 rok soutěže
+        const compRes = await pool.query(
+            `
+    SELECT EXTRACT(YEAR FROM c.start_date)::int AS year
+    FROM competition c
+    JOIN registration r ON r.competition_id = c.competition_id
+    WHERE r.registration_id = $1
+    `,
+            [registration_id]
+        );
+
+        const competitionYear = compRes.rows[0].year;
+        const age = competitionYear - birthYear;
+
+// 🔹 věkové kategorie disciplíny
+        const catRes = await pool.query(
+            `
+    SELECT ac.min_age, ac.max_age
+    FROM discipline_age_category dac
+    JOIN age_category ac ON ac.age_category_id = dac.age_category_id
+    WHERE dac.discipline_id = $1
+    `,
+            [discipline_id]
+        );
+
+        let valid = true;
+
+        if (catRes.rows.length > 0) {
+            valid = catRes.rows.some(c =>
+                age >= c.min_age &&
+                (c.max_age === null || age <= c.max_age)
+            );
+        }
+
+        if (!valid) {
+            return res.status(400).json({
+                code: "AGE_MISMATCH",
+                error: "Závodník nesplňuje věkovou kategorii disciplíny"
+            });
+        }
 
         // INDIVIDUÁLNÍ
         if (!is_team) {

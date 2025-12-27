@@ -69,14 +69,18 @@ export default function CreateCompetition() {
                 />
 
                 <label>Datum konání</label>
+                <label>Start soutezi</label>
                 <input type="date"
                        onChange={e => setForm({...form, start_date: e.target.value})}/>
+                <label>Konec soutezi</label>
                 <input type="date"
                        onChange={e => setForm({...form, end_date: e.target.value})}/>
 
                 <label>Registrace</label>
+                <label>Start registrace</label>
                 <input type="date"
                        onChange={e => setForm({...form, reg_start: e.target.value})}/>
+                <label>Konec registrace</label>
                 <input type="date"
                        onChange={e => setForm({...form, reg_end: e.target.value})}/>
 
@@ -113,7 +117,7 @@ export default function CreateCompetition() {
                             placeholder="Jméno"
                             value={newReferee.first_name}
                             onChange={e =>
-                                setNewReferee({ ...newReferee, first_name: e.target.value })
+                                setNewReferee({...newReferee, first_name: e.target.value})
                             }
                         />
 
@@ -121,7 +125,7 @@ export default function CreateCompetition() {
                             placeholder="Příjmení"
                             value={newReferee.last_name}
                             onChange={e =>
-                                setNewReferee({ ...newReferee, last_name: e.target.value })
+                                setNewReferee({...newReferee, last_name: e.target.value})
                             }
                         />
 
@@ -129,7 +133,7 @@ export default function CreateCompetition() {
                             placeholder="Kategorie (volitelné)"
                             value={newReferee.category}
                             onChange={e =>
-                                setNewReferee({ ...newReferee, category: e.target.value })
+                                setNewReferee({...newReferee, category: e.target.value})
                             }
                         />
 
@@ -150,7 +154,7 @@ export default function CreateCompetition() {
                                     }));
 
                                     // reset
-                                    setNewReferee({ first_name: "", last_name: "", category: "" });
+                                    setNewReferee({first_name: "", last_name: "", category: ""});
                                     setMode("select");
                                 }}
                             >

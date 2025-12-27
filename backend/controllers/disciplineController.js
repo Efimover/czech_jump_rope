@@ -284,27 +284,6 @@ export const updateDiscipline = async (req, res) => {
 };
 
 
-// /**
-//  * Smazat disciplínu
-//  */
-// export const deleteDiscipline = async (req, res) => {
-//     const { id } = req.params;
-//
-//
-//     try {
-//         await pool.query(
-//             `DELETE FROM discipline WHERE discipline_id = $1`,
-//             [id]
-//         );
-//
-//         res.json({ message: "Discipline deleted" });
-//
-//     } catch (err) {
-//         console.error("Error deleting discipline:", err);
-//         res.status(500).json({ error: "Server error" });
-//     }
-// };
-
 // Smazat disciplinu z souteze
 export const removeDisciplineFromCompetition = async (req, res) => {
     const { competition_id, discipline_id } = req.body;

@@ -56,6 +56,6 @@ export const validateBirthYearForCompetition = (
         return "Neplatný věk závodníka";
     }
 
-    return null; // ✅ OK
+    return null; 
 };
 
