@@ -68,3 +68,18 @@
 .register-btn:hover {
     background: #0d47a1;
 }
+
+.edit-btn {
+    margin-top: 24px;
+    padding: 10px 16px;
+    border-radius: 8px;
+    border: none;
+    background: #1e40af;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.edit-btn:hover {
+    background: #1d4ed8;
+}

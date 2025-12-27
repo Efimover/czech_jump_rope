@@ -14,7 +14,8 @@ CREATE TABLE "user_account" (
                             date_birth     DATE,
                             created_at     TIMESTAMP WITH TIME ZONE DEFAULT now(),
                             updated_at     TIMESTAMP WITH TIME ZONE DEFAULT now(),
-                            password VARCHAR(255) NOT NULL
+                            password VARCHAR(255) NOT NULL,
+                            active_role VARCHAR(50)
 );
 
 CREATE TABLE "role" (

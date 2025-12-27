@@ -62,9 +62,11 @@ export const loginUser = async (req, res) => {
         const { email, password } = req.body;
 
         const result = await pool.query(
-            `SELECT user_id, email, password, first_name, last_name
-             FROM user_account
-             WHERE email = $1`,
+            `
+                SELECT user_id, email, password, first_name, last_name, active_role
+                FROM user_account
+                WHERE email = $1
+            `,
             [email]
         );
 
@@ -78,34 +80,47 @@ export const loginUser = async (req, res) => {
             return res.status(400).json({ message: "Invalid email or password." });
         }
 
-        // ⬇⬇⬇ NAČTI ROLE ⬇⬇⬇
+        // načti role
         const rolesRes = await pool.query(
             `
-            SELECT r.name
-            FROM role_user ru
-            JOIN role r ON r.role_id = ru.role_id
-            WHERE ru.user_id = $1
+                SELECT r.name
+                FROM role_user ru
+                         JOIN role r ON r.role_id = ru.role_id
+                WHERE ru.user_id = $1
             `,
             [user.user_id]
         );
 
         const roles = rolesRes.rows.map(r => r.name);
 
+        // nastav defaultní active_role, pokud není
+        let activeRole = user.active_role;
+        if (!activeRole || !roles.includes(activeRole)) {
+            activeRole = roles[0]; // první role
+            await pool.query(
+                `UPDATE user_account SET active_role = $1 WHERE user_id = $2`,
+                [activeRole, user.user_id]
+            );
+        }
+
         const token = jwt.sign(
-            { user_id: user.user_id },
+            {
+                user_id: user.user_id,
+                active_role: activeRole
+            },
             process.env.JWT_SECRET,
             { expiresIn: "7d" }
         );
 
         res.json({
-            message: "Login successful.",
             token,
             user: {
                 user_id: user.user_id,
                 email: user.email,
                 first_name: user.first_name,
                 last_name: user.last_name,
-                roles
+                roles,
+                active_role: activeRole
             }
         });
 
@@ -130,7 +145,6 @@ export const getProfile = async (req, res) => {
         res.status(500).json({ message: "Server error." });
     }
 };
-
 export const getMe = async (req, res) => {
     const userId = req.user.user_id;
 
@@ -141,18 +155,18 @@ export const getMe = async (req, res) => {
                 u.first_name,
                 u.last_name,
                 u.email,
+                u.active_role,
                 json_agg(r.name) AS roles
             FROM user_account u
                      JOIN role_user ru ON ru.user_id = u.user_id
                      JOIN role r ON r.role_id = ru.role_id
             WHERE u.user_id = $1
-            GROUP BY u.user_id;
+            GROUP BY u.user_id
         `,
         [userId]
     );
 
     res.json(result.rows[0]);
-
 };
 
 export const updateMe = async (req, res) => {
@@ -318,4 +332,39 @@ export const changePassword = async (req, res) => {
         console.error("changePassword error:", err);
         res.status(500).json({ error: "Server error" });
     }
+};
+
+//controller pro prepinani roli
+
+export const switchActiveRole = async (req, res) => {
+    const userId = req.user.user_id;
+    const { role } = req.body;
+
+    // ověř, že uživatel tuto roli má
+    const check = await pool.query(
+        `
+        SELECT 1
+        FROM role_user ru
+        JOIN role r ON r.role_id = ru.role_id
+        WHERE ru.user_id = $1 AND r.name = $2
+        `,
+        [userId, role]
+    );
+
+    if (check.rowCount === 0) {
+        return res.status(400).json({
+            error: "Uživatel tuto roli nemá"
+        });
+    }
+
+    await pool.query(
+        `
+        UPDATE user_account
+        SET active_role = $1
+        WHERE user_id = $2
+        `,
+        [role, userId]
+    );
+
+    res.json({ active_role: role });
 };

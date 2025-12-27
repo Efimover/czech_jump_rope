@@ -8,7 +8,7 @@ import {
     deleteUser,
     getMe,
     updateMe,
-    changePassword
+    changePassword, switchActiveRole
 } from "../controllers/userController.js";
 import { validateRegister } from "../middleware/validateRegister.js";
 import {verifyToken} from "../middleware/authMiddleware.js";
@@ -31,6 +31,13 @@ router.get("/", getUsers);        // List users
 router.get("/:user_id", getUser);
 router.delete("/:user_id", deleteUser); // Delete user
 router.put("/:user_id", verifyToken, updateMe);
+
+router.put(
+    "/me/active-role",
+    verifyToken,
+    switchActiveRole
+);
+
 router.post("/:user_id/roles",
     verifyToken,
     requireRole("admin"),

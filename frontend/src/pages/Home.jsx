@@ -1,24 +1,14 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import "../styles/home.css";
 import { AuthContext } from "../context/AuthContext";
-import { useContext } from "react";
-import {getCompetitions} from "../api/competitionApi.js";
 import { formatDate } from "../utils/date";
 
 export default function Home() {
     const navigate = useNavigate();
     const { user, logout } = useContext(AuthContext);
 
-    const canCreateCompetition =
-        user?.roles?.some(r =>
-            ["admin", "organizator"].includes(
-                typeof r === "string" ? r : r.role
-            )
-        );
-    console.log("USER:", user);
-    console.log("ROLES:", user?.roles);
     const [filters, setFilters] = useState({
         status: "all",
         time: "all",
@@ -26,18 +16,24 @@ export default function Home() {
     });
     const [competitions, setCompetitions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [switchingRole, setSwitchingRole] = useState(false);
+
+    // ⬇⬇⬇ používej ACTIVE ROLE
+    const canCreateCompetition =
+        user?.active_role === "admin" ||
+        user?.active_role === "organizator";
+
+    // ---------------- LOAD COMPETITIONS ----------------
     useEffect(() => {
         const timeout = setTimeout(() => {
             loadCompetitions();
         }, 300);
-
         return () => clearTimeout(timeout);
     }, [filters]);
 
     const loadCompetitions = async () => {
         try {
             const params = {};
-
             if (filters.status !== "all") params.status = filters.status;
             if (filters.time !== "all") params.time = filters.time;
             if (filters.discipline) params.discipline = filters.discipline;
@@ -51,10 +47,37 @@ export default function Home() {
         }
     };
 
+    // ---------------- SWITCH ROLE ----------------
+    const switchRole = async (newRole) => {
+        if (newRole === user.active_role) return;
+
+        try {
+            setSwitchingRole(true);
+
+            const res = await api.put("/users/me/active-role", {
+                role: newRole
+            });
+
+            const updatedUser = {
+                ...user,
+                active_role: res.data.active_role
+            };
+
+            localStorage.setItem("user", JSON.stringify(updatedUser));
+            window.location.reload(); // jednoduché & spolehlivé
+        } catch (err) {
+            alert(err.response?.data?.error || "Nepodařilo se přepnout roli");
+        } finally {
+            setSwitchingRole(false);
+        }
+    };
+
     return (
         <div className="home-container">
+            {/* ================= HEADER ================= */}
             <header className="home-header">
                 <div className="logo">Czech Jump Rope</div>
+
                 <nav className="nav-buttons">
                     {!user ? (
                         <>
@@ -67,7 +90,26 @@ export default function Home() {
                         </>
                     ) : (
                         <>
-                            <span className="nav-user">👤 {user.first_name}</span>
+                            {/* 👤 USER + ROLE */}
+                            <div className="role-switcher">
+                                <span className="nav-user">
+                                    👤 {user.first_name}
+                                </span>
+
+                                {user.roles?.length > 1 && (
+                                    <select
+                                        value={user.active_role}
+                                        onChange={e => switchRole(e.target.value)}
+                                        disabled={switchingRole}
+                                    >
+                                        {user.roles.map(r => (
+                                            <option key={r} value={r}>
+                                                {r}
+                                            </option>
+                                        ))}
+                                    </select>
+                                )}
+                            </div>
 
                             <button
                                 onClick={() => navigate("/profile")}
@@ -76,10 +118,7 @@ export default function Home() {
                                 Profil
                             </button>
 
-                            <button
-                                onClick={logout}
-                                className="nav-btn"
-                            >
+                            <button onClick={logout} className="nav-btn">
                                 Odhlásit se
                             </button>
                         </>
@@ -87,12 +126,14 @@ export default function Home() {
                 </nav>
             </header>
 
+            {/* ================= HERO ================= */}
             <section className="hero">
                 <h1>Sportovní registrace jednoduše</h1>
                 <p>
                     Přihlašujte sebe nebo svůj tým do soutěží v rope skippingu rychle a přehledně.
                 </p>
             </section>
+
             {user && (
                 <button
                     className="btn-outline"
@@ -101,14 +142,15 @@ export default function Home() {
                     📋 Moje přihlášky
                 </button>
             )}
+
+            {/* ================= COMPETITIONS ================= */}
             <section className="competitions-preview">
                 <h2>Soutěže</h2>
-
 
                 <div className="filter-bar">
                     <select
                         value={filters.status}
-                        onChange={e => setFilters(f => ({...f, status: e.target.value}))}
+                        onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}
                     >
                         <option value="all">Všechny registrace</option>
                         <option value="open">Registrace otevřená</option>
@@ -117,7 +159,7 @@ export default function Home() {
 
                     <select
                         value={filters.time}
-                        onChange={e => setFilters(f => ({...f, time: e.target.value}))}
+                        onChange={e => setFilters(f => ({ ...f, time: e.target.value }))}
                     >
                         <option value="all">Všechny soutěže</option>
                         <option value="upcoming">Nadcházející</option>
@@ -128,18 +170,17 @@ export default function Home() {
                         placeholder="Hledat disciplínu…"
                         value={filters.discipline}
                         onChange={e =>
-                            setFilters(f => ({...f, discipline: e.target.value}))
+                            setFilters(f => ({ ...f, discipline: e.target.value }))
                         }
                     />
                 </div>
 
-                {/* Žádné soutěže */}
                 {!loading && competitions.length === 0 && (
                     <div className="competition-placeholder">
                         <p>Brzy zde uvidíte seznam aktivních soutěží.</p>
                     </div>
                 )}
-                {/* Seznam soutěží */}
+
                 <div className="competition-list">
                     {canCreateCompetition && (
                         <div
@@ -150,14 +191,17 @@ export default function Home() {
                             <p>Vytvořit novou soutěž</p>
                         </div>
                     )}
-                    {competitions.map((c) => (
+
+                    {competitions.map(c => (
                         <div key={c.competition_id} className="competition-card">
                             <h3>{c.name}</h3>
                             <p><strong>Lokace:</strong> {c.location || "Neuvedeno"}</p>
                             <p><strong>Datum:</strong> {formatDate(c.start_date)}</p>
                             <button
                                 className="card-btn"
-                                onClick={() => navigate(`/competitions/${c.competition_id}`)}
+                                onClick={() =>
+                                    navigate(`/competitions/${c.competition_id}`)
+                                }
                             >
                                 Detail soutěže
                             </button>

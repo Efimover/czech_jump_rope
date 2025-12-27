@@ -43,6 +43,17 @@ export default function CompetitionDetail() {
 
     if (loading) return <p style={{ textAlign: "center" }}>Načítám soutěž...</p>;
     if (!competition) return <p style={{ textAlign: "center" }}>Soutěž nenalezena.</p>;
+    const canEditCompetition =
+        user &&
+        (
+            user.active_role === "admin" ||
+            (
+                user.active_role === "organizator" &&
+                competition.owner_id === user.user_id
+            )
+        );
+
+
 
     return (
         <div className="detail-container">
@@ -131,9 +142,14 @@ export default function CompetitionDetail() {
                     )}
                 </div>
 
-                <button onClick={() => navigate(`/competitions/${id}/edit`)}>
-                    ⚙ Správa Souteží
-                </button>
+                {canEditCompetition && (
+                    <button
+                        className="edit-btn"
+                        onClick={() => navigate(`/competitions/${id}/edit`)}
+                    >
+                        ⚙ Správa soutěže
+                    </button>
+                )}
             </div>
         </div>
     );

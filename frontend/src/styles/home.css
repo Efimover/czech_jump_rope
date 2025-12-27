@@ -185,3 +185,16 @@
     line-height: 1;
 }
 
+.role-switcher {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.role-switcher select {
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #ccc;
+    background: white;
+    font-size: 0.85rem;
+}
