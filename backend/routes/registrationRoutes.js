@@ -9,17 +9,19 @@ import {
     getMyRegistrations,
     getRegistration,
     submitRegistration,
-    deleteRegistration
+    deleteRegistration, getRegistrationsByRole
 } from "../controllers/registrationController.js";
-
-import {
-    createAthleteForTeam,
-    getAthletesByTeam
-} from "../controllers/athleteController.js";
-
 
 
 const router = express.Router();
+
+
+router.get(
+    "/",
+    verifyToken,
+    requireRole("admin", "organizator"),
+    getRegistrationsByRole
+);
 
 /**
  * ---------------------------------------------------------

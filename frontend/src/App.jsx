@@ -16,6 +16,8 @@ import MyRegistrations from "./pages/MyRegistrations.jsx";
 import Profile from "./pages/Profile.jsx";
 import CreateCompetition from "./pages/CreateCompetition.jsx";
 import CompetitionEdit from "./pages/CompetitionEdit.jsx";
+import AllRegistrations from "./pages/AllRegistrations.jsx";
+import RequireRole from "./components/RequireRole.jsx";
 
 
 
@@ -65,6 +67,14 @@ export default function App() {
                     element={<CompetitionEdit />}
                 />
 
+                <Route
+                    path="/registrations"
+                    element={
+                        <RequireRole roles={["admin", "organizator"]}>
+                            <AllRegistrations />
+                        </RequireRole>
+                    }
+                />
 
             </Routes>
         </BrowserRouter>

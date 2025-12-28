@@ -295,3 +295,55 @@ export const getMyRegistrations = async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 };
+
+
+//Admin + oragnizator view registrations
+
+export const getRegistrationsByRole = async (req, res) => {
+    const userId = req.user.user_id;
+    const role = req.user.active_role;
+
+    let query;
+    let params = [];
+
+    if (role === "admin") {
+        query = `
+            SELECT
+                r.registration_id,
+                r.status,
+                r.created_at,
+                u.email AS user_email,
+                c.name AS competition_name
+            FROM registration r
+            JOIN competition c ON c.competition_id = r.competition_id
+            JOIN user_account u ON u.user_id = r.user_id
+            ORDER BY r.created_at DESC
+        `;
+    }
+
+    else if (role === "organizator") {
+        query = `
+            SELECT
+                r.registration_id,
+                r.status,
+                r.created_at,
+                u.email AS user_email,
+                c.name AS competition_name
+            FROM registration r
+            JOIN competition c ON c.competition_id = r.competition_id
+            JOIN user_account u ON u.user_id = r.user_id
+            WHERE c.owner_id = $1
+            ORDER BY r.created_at DESC
+        `;
+        params = [userId];
+    }
+
+    else {
+        return res.status(403).json({
+            error: "Nepovolený přístup"
+        });
+    }
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
+};

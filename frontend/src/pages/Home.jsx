@@ -18,7 +18,11 @@ export default function Home() {
     const [loading, setLoading] = useState(true);
     const [switchingRole, setSwitchingRole] = useState(false);
 
-    // ⬇⬇⬇ používej ACTIVE ROLE
+    const canManageRegistrations =
+        user?.active_role === "admin" ||
+        user?.active_role === "organizator";
+
+    // ACTIVE ROLE
     const canCreateCompetition =
         user?.active_role === "admin" ||
         user?.active_role === "organizator";
@@ -135,12 +139,25 @@ export default function Home() {
             </section>
 
             {user && (
-                <button
-                    className="btn-outline"
-                    onClick={() => navigate("/my-registrations")}
-                >
-                    📋 Moje přihlášky
-                </button>
+                <div className="home-actions">
+                    {/* soutěžící */}
+                    <button
+                        className="btn-outline"
+                        onClick={() => navigate("/my-registrations")}
+                    >
+                        📋 Moje přihlášky
+                    </button>
+
+                    {/* admin / organizátor */}
+                    {canManageRegistrations && (
+                        <button
+                            className="btn-outline"
+                            onClick={() => navigate("/registrations")}
+                        >
+                            🗂 Všechny přihlášky
+                        </button>
+                    )}
+                </div>
             )}
 
             {/* ================= COMPETITIONS ================= */}

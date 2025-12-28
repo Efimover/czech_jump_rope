@@ -198,3 +198,10 @@
     background: white;
     font-size: 0.85rem;
 }
+
+.home-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+    margin: 20px 0;
+}
