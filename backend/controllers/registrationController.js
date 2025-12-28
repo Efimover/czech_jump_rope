@@ -3,22 +3,40 @@ export const getRegistration = async (req, res) => {
     try {
         const { registration_id } = req.params;
         const userId = req.user.user_id;
+        const role = req.user.active_role;
 
-        const reg = await pool.query(
-            `SELECT r.*, c.name AS competition_name
-     FROM registration r
-     JOIN competition c ON c.competition_id = r.competition_id
-     WHERE r.registration_id = $1
-       AND r.user_id = $2
-    `,
-    [registration_id, userId]
-);
+        let query = `
+            SELECT r.*, c.name AS competition_name
+            FROM registration r
+            JOIN competition c ON c.competition_id = r.competition_id
+            WHERE r.registration_id = $1
+        `;
 
-        if (reg.rowCount === 0) {
-            return res.status(404).json({ error: "Registration not found" });
+        const params = [registration_id];
+
+        // soutěžící → jen svoje
+        if (role === "soutezici" || role === "user") {
+            query += " AND r.user_id = $2";
+            params.push(userId);
         }
 
-        return res.json(reg.rows[0]);
+        // organizátor → jen soutěže, které vlastní
+        if (role === "organizator") {
+            query += " AND c.owner_id = $2";
+            params.push(userId);
+        }
+
+        // admin → žádné omezení
+
+        const reg = await pool.query(query, params);
+
+        if (reg.rowCount === 0) {
+            return res.status(404).json({
+                error: "Registration not found"
+            });
+        }
+
+        res.json(reg.rows[0]);
 
     } catch (err) {
         console.error("getRegistration error:", err);
