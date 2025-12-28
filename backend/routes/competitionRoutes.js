@@ -415,9 +415,11 @@ router.get(
                 "Content-Disposition",
                 `attachment; filename=prihlasky_${competition.name}.pdf`
             );
-            doc.font(
-                path.resolve("assets/fonts/Roboto-Regular.ttf")
-            );
+            try {
+                doc.font(path.resolve("assets/fonts/Roboto-Regular.ttf"));
+            } catch {
+                doc.font("Helvetica");
+            }
 
             doc.pipe(res);
 
