@@ -69,9 +69,7 @@ export default function MyRegistrations() {
             );
         }
     }
-    if (user.active_role === "admin" || user.active_role === "organizator") {
-        api.get("/registrations");
-    }
+
 
     if (loading) return <p>Načítám…</p>;
 

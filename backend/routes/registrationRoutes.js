@@ -9,7 +9,7 @@ import {
     getMyRegistrations,
     getRegistration,
     submitRegistration,
-    deleteRegistration, getRegistrationsByRole
+    deleteRegistration, getRegistrationsByRole, reopenRegistration
 } from "../controllers/registrationController.js";
 
 
@@ -21,6 +21,14 @@ router.get(
     verifyToken,
     requireRole("admin", "organizator"),
     getRegistrationsByRole
+);
+
+// admin + org muze otevrit prihlasku pro upravu uzivatelem
+router.post(
+    "/:registration_id/reopen",
+    verifyToken,
+    requireRole("admin", "organizator"),
+    reopenRegistration
 );
 
 /**
@@ -140,7 +148,6 @@ router.post(
 router.delete(
     "/:registration_id",
     verifyToken,
-    requireRole("soutezici", "user"),
     deleteRegistration
 );
 

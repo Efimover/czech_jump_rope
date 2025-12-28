@@ -238,35 +238,74 @@ export const submitRegistration = async (req, res) => {
 };
 
 
+// export const deleteRegistration = async (req, res) => {
+//     const { registration_id } = req.params;
+//     const userId = req.user.user_id;
+//
+//     try {
+//         const result = await pool.query(
+//             `
+//             DELETE FROM registration
+//             WHERE registration_id = $1
+//               AND user_id = $2
+//               AND status = 'saved'
+//             RETURNING registration_id
+//             `,
+//             [registration_id, userId]
+//         );
+//
+//         if (result.rowCount === 0) {
+//             return res.status(403).json({
+//                 error: "Přihlášku nelze smazat (neexistuje nebo již byla odeslána)"
+//             });
+//         }
+//
+//         res.json({ success: true });
+//
+//     } catch (err) {
+//         console.error("deleteRegistration error:", err);
+//         res.status(500).json({ error: "Server error" });
+//     }
+// };
+
 export const deleteRegistration = async (req, res) => {
     const { registration_id } = req.params;
     const userId = req.user.user_id;
+    const role = req.user.active_role;
 
-    try {
-        const result = await pool.query(
-            `
-            DELETE FROM registration
-            WHERE registration_id = $1
-              AND user_id = $2
-              AND status = 'saved'
-            RETURNING registration_id
-            `,
-            [registration_id, userId]
-        );
+    let query = `
+        DELETE FROM registration r
+        USING competition c
+        WHERE r.registration_id = $1
+          AND c.competition_id = r.competition_id
+    `;
 
-        if (result.rowCount === 0) {
-            return res.status(403).json({
-                error: "Přihlášku nelze smazat (neexistuje nebo již byla odeslána)"
-            });
-        }
+    const params = [registration_id];
 
-        res.json({ success: true });
-
-    } catch (err) {
-        console.error("deleteRegistration error:", err);
-        res.status(500).json({ error: "Server error" });
+    if (role === "soutezici" || role === "user") {
+        query += " AND r.user_id = $2 AND r.status = 'saved'";
+        params.push(userId);
     }
+
+    if (role === "organizator") {
+        query += " AND c.owner_id = $2";
+        params.push(userId);
+    }
+
+    // admin → bez omezení
+
+    const result = await pool.query(query, params);
+
+    if (result.rowCount === 0) {
+        return res.status(403).json({
+            error: "Přihlášku nelze smazat"
+        });
+    }
+
+    res.json({ success: true });
 };
+
+
 export const getMyRegistrations = async (req, res) => {
     const userId = req.user.user_id;
 
@@ -313,6 +352,41 @@ export const getMyRegistrations = async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 };
+
+export const reopenRegistration = async (req, res) => {
+    const { registration_id } = req.params;
+    const userId = req.user.user_id;
+    const role = req.user.active_role;
+
+    let query = `
+        UPDATE registration r
+        SET status = 'saved'
+        FROM competition c
+        WHERE r.registration_id = $1
+          AND r.status = 'submitted'
+          AND c.competition_id = r.competition_id
+    `;
+
+    const params = [registration_id];
+
+    if (role === "organizator") {
+        query += " AND c.owner_id = $2";
+        params.push(userId);
+    }
+
+    // admin → bez omezení
+
+    const result = await pool.query(query, params);
+
+    if (result.rowCount === 0) {
+        return res.status(403).json({
+            error: "Nelze změnit stav přihlášky"
+        });
+    }
+
+    res.json({ success: true });
+};
+
 
 
 //Admin + oragnizator view registrations

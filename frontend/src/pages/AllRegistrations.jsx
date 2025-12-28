@@ -11,6 +11,10 @@ export default function AllRegistrations() {
     const [registrations, setRegistrations] = useState([]);
     const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
+    const canDelete =
+        user.active_role === "admin" ||
+        user.active_role === "organizator";
+
 
     useEffect(() => {
         if (
@@ -32,6 +36,27 @@ export default function AllRegistrations() {
         }
     }
 
+    async function deleteRegistration(id) {
+        const ok = confirm(
+            "⚠️ POZOR – NEVRATNÁ AKCE ⚠️\n\n" +
+            "Opravdu chcete smazat tuto přihlášku?\n" +
+            "Všechna data budou trvale odstraněna."
+        );
+        if (!ok) return;
+
+        try {
+            await api.delete(`/registrations/${id}`);
+            setRegistrations(prev =>
+                prev.filter(r => r.registration_id !== id)
+            );
+        } catch (err) {
+            alert(
+                err.response?.data?.error ||
+                "Přihlášku se nepodařilo smazat"
+            );
+        }
+    }
+
     if (loading) return <p>Načítám…</p>;
 
     return (
@@ -43,6 +68,17 @@ export default function AllRegistrations() {
                     <h3>{r.competition_name}</h3>
                     <p>Uživatel: {r.user_email}</p>
                     <p>Status: {r.status}</p>
+                    {canDelete && (
+                        <div className="danger-zone">
+                            <button
+                                className="btn-danger"
+                                onClick={() => deleteRegistration(r.registration_id)}
+                            >
+                                🗑 Smazat přihlášku
+                            </button>
+                        </div>
+                    )}
+
 
                     <button
                         className="btn-outline"

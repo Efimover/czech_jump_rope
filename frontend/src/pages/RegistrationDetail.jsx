@@ -1,9 +1,10 @@
-import React, { useEffect, useState } from "react";
+import React, {useContext, useEffect, useState} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import "../styles/registrationDetail.css";
 import DisciplineGrid from "./DisciplineGrid.jsx";
 import AthleteCard from "./AthleteCard.jsx";
+import {AuthContext} from "../context/AuthContext.jsx";
 
 export default function RegistrationDetail() {
     const { id } = useParams();
@@ -12,11 +13,18 @@ export default function RegistrationDetail() {
     const [registration, setRegistration] = useState(null);
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
+    const { user } = useContext(AuthContext);
+
+    const canReopen =
+        user.active_role === "admin" ||
+        user.active_role === "organizator";
 
     useEffect(() => {
         loadRegistration();
         loadTeamsWithAthletes();
     }, [id]);
+
+
 
     async function loadTeams() {
         const res = await api.get(`/teams/by-registration/${id}`);
@@ -72,6 +80,16 @@ export default function RegistrationDetail() {
             alert("Nepodařilo se smazat závodníka");
         }
     }
+    async function reopen() {
+        const ok = confirm(
+            "Opravdu chcete vrátit přihlášku k úpravám?\n" +
+            "Vlastník přihlášky ji bude moci znovu upravovat."
+        );
+        if (!ok) return;
+
+        await api.post(`/registrations/${registration.registration_id}/reopen`);
+        loadRegistration();
+    }
 
     async function submitRegistration() {
         if (
@@ -98,6 +116,8 @@ export default function RegistrationDetail() {
             }
         }
     }
+
+
 
     async function deleteRegistration() {
         const ok = confirm(
@@ -252,6 +272,15 @@ export default function RegistrationDetail() {
                         🗑 Smazat přihlášku
                     </button>
                 </div>
+            )}
+
+            {canReopen && registration.status === "submitted" && (
+                <button
+                    className="btn-warning"
+                    onClick={reopen}
+                >
+                    🔓 Vrátit k úpravám
+                </button>
             )}
 
         </div>
