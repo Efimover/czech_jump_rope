@@ -14,6 +14,14 @@ export default function RegistrationDetail() {
     const [teams, setTeams] = useState([]);
     const [loading, setLoading] = useState(true);
     const { user } = useContext(AuthContext);
+    const [auditLog, setAuditLog] = useState([]);
+    const isOwner = Boolean(
+        registration && user.user_id === registration.user_id
+    );
+
+    const canEdit =
+        isOwner && registration?.status === "saved";
+
 
     const canReopen =
         user.active_role === "admin" ||
@@ -25,6 +33,13 @@ export default function RegistrationDetail() {
     }, [id]);
 
 
+    async function loadAuditLog() {
+        const res = await api.get(`/registrations/${id}/audit-log`);
+        setAuditLog(res.data);
+    }
+    useEffect(() => {
+        loadAuditLog();
+    }, [id]);
 
     async function loadTeams() {
         const res = await api.get(`/teams/by-registration/${id}`);
@@ -184,7 +199,7 @@ export default function RegistrationDetail() {
                     <span>{registration.contact_email}</span>
                 </div>
 
-                {registration.status !== "submitted" && (
+                {canEdit && (
                     <button className="btn-outline">
                         Upravit údaje
                     </button>
@@ -201,7 +216,7 @@ export default function RegistrationDetail() {
                             Zatím nebyl vytvořen žádný tým.
                         </p>
 
-                        {registration.status === "saved" && (
+                        {canEdit && (
                             <button
                                 className="btn-primary"
                                 onClick={createTeam}
@@ -219,20 +234,23 @@ export default function RegistrationDetail() {
                         {team.athletes?.length > 0 ? (
                             team.athletes.map(a => (
                                 <AthleteCard
-                                    key={a.athlete_id}
                                     athlete={a}
-                                    readOnly={registration.status === "submitted"}
-                                    onEdit={() =>
-                                        navigate(`/athletes/${a.athlete_id}/edit`)
+                                    readOnly={!canEdit}
+                                    onEdit={canEdit ? () =>
+                                            navigate(`/athletes/${a.athlete_id}/edit`)
+                                        : undefined
                                     }
-                                    onDelete={() => deleteAthlete(a.athlete_id, team.team_id)}
+                                    onDelete={canEdit
+                                        ? () => deleteAthlete(a.athlete_id, team.team_id)
+                                        : undefined
+                                    }
                                 />
                             ))
                         ) : (
                             <p className="placeholder">Zatím žádní závodníci</p>
                         )}
 
-                        {registration.status !== "submitted" && (
+                        {canEdit && registration.status !== "submitted" && (
                             <button
                                 className="btn-primary"
                                 onClick={() =>
@@ -245,13 +263,13 @@ export default function RegistrationDetail() {
                     </div>
                 ))}
 
-                {/* 👇 GRID PATŘÍ SEM */}
+                {/*  GRID  */}
                 {teams.length > 0 && (
                     <DisciplineGrid
-                        registrationId={id}
-                        competitionId={registration.competition_id}
-                        teams={teams}
-                        readOnly={registration.status === "submitted"}
+                    registrationId={id}
+                    competitionId={registration.competition_id}
+                    teams={teams}
+                    readOnly={!canEdit}
                     />
                 )}
             </div>
@@ -282,6 +300,27 @@ export default function RegistrationDetail() {
                     🔓 Vrátit k úpravám
                 </button>
             )}
+
+            <div className="section-card">
+                <h2>Historie změn</h2>
+
+                {auditLog.length === 0 && (
+                    <p className="placeholder">Žádné záznamy</p>
+                )}
+
+                {auditLog.map(log => (
+                    <div key={log.audit_id} className="audit-row">
+                        <strong>{log.action}</strong>
+                        <span>
+                {log.actor_email} ({log.actor_role})
+            </span>
+                        <span>
+                {new Date(log.created_at).toLocaleString()}
+            </span>
+                        {log.message && <em>{log.message}</em>}
+                    </div>
+                ))}
+            </div>
 
         </div>
     );

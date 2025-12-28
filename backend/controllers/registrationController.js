@@ -1,4 +1,7 @@
 import { pool } from "../db/index.js";
+
+import { logRegistrationAction } from "../services/auditService.js";
+
 export const getRegistration = async (req, res) => {
     try {
         const { registration_id } = req.params;
@@ -6,9 +9,18 @@ export const getRegistration = async (req, res) => {
         const role = req.user.active_role;
 
         let query = `
-            SELECT r.*, c.name AS competition_name
+            SELECT
+                r.registration_id,
+                r.user_id,
+                r.status,
+                r.contact_name,
+                r.contact_email,
+                r.created_at,
+                r.updated_at,
+                c.name AS competition_name,
+                c.competition_id
             FROM registration r
-            JOIN competition c ON c.competition_id = r.competition_id
+                     JOIN competition c ON c.competition_id = r.competition_id
             WHERE r.registration_id = $1
         `;
 
@@ -91,15 +103,7 @@ export const createRegistration = async (req, res) => {
         }
 
         const { reg_start, reg_end } = comp.rows[0];
-        // const today = new Date();
-        //
-        // // 3️⃣ Přihlašování povoleno?
-        // if (today < new Date(reg_start) || today > new Date(reg_end)) {
-        //     return res.status(400).json({
-        //         status: "error",
-        //         message: "Registrace do soutěže není aktuálně otevřena."
-        //     });
-        // }
+
 
         // 4️⃣ Vytvoření přihlášky
         const result = await pool.query(
@@ -108,12 +112,22 @@ export const createRegistration = async (req, res) => {
              RETURNING registration_id, status, created_at`,
             [competition_id, userId, contact_name, contact_email]
         );
+        await logRegistrationAction({
+            registration_id: result.rows[0].registration_id,
+            actor_user_id: userId,
+            actor_role: role,
+            action: "CREATE",
+            new_status: "saved",
+            message: "Přihláška byla vytvořena"
+        });
 
         return res.status(201).json({
             status: "success",
             message: "Přihláška vytvořena.",
             registration: result.rows[0]
         });
+
+
 
     } catch (err) {
         console.error("Create registration error:", err);
@@ -122,6 +136,7 @@ export const createRegistration = async (req, res) => {
             message: "Došlo k chybě serveru. Zkuste to prosím znovu."
         });
     }
+
 };
 
 export const submitRegistration = async (req, res) => {
@@ -231,47 +246,35 @@ export const submitRegistration = async (req, res) => {
 
         res.json({ success: true });
 
+        await logRegistrationAction({
+            registration_id,
+            actor_user_id: userId,
+            actor_role: role,
+            action: "SUBMIT",
+            old_status: "saved",
+            new_status: "submitted",
+            message: "Přihláška byla odeslána soutěžícím"
+        });
+
     } catch (err) {
         console.error("submitRegistration error:", err);
         res.status(500).json({ error: "Server error" });
     }
 };
 
-
-// export const deleteRegistration = async (req, res) => {
-//     const { registration_id } = req.params;
-//     const userId = req.user.user_id;
-//
-//     try {
-//         const result = await pool.query(
-//             `
-//             DELETE FROM registration
-//             WHERE registration_id = $1
-//               AND user_id = $2
-//               AND status = 'saved'
-//             RETURNING registration_id
-//             `,
-//             [registration_id, userId]
-//         );
-//
-//         if (result.rowCount === 0) {
-//             return res.status(403).json({
-//                 error: "Přihlášku nelze smazat (neexistuje nebo již byla odeslána)"
-//             });
-//         }
-//
-//         res.json({ success: true });
-//
-//     } catch (err) {
-//         console.error("deleteRegistration error:", err);
-//         res.status(500).json({ error: "Server error" });
-//     }
-// };
+// Smazani prihlasek
 
 export const deleteRegistration = async (req, res) => {
     const { registration_id } = req.params;
     const userId = req.user.user_id;
     const role = req.user.active_role;
+    await logRegistrationAction({
+        registration_id,
+        actor_user_id: userId,
+        actor_role: role,
+        action: "DELETE",
+        message: "Přihláška byla trvale smazána"
+    });
 
     let query = `
         DELETE FROM registration r
@@ -378,11 +381,22 @@ export const reopenRegistration = async (req, res) => {
 
     const result = await pool.query(query, params);
 
+    await logRegistrationAction({
+        registration_id,
+        actor_user_id: userId,
+        actor_role: role,
+        action: "REOPEN",
+        old_status: "submitted",
+        new_status: "saved",
+        message: "Admin/organizátor vrátil přihlášku k úpravám"
+    });
+
     if (result.rowCount === 0) {
         return res.status(403).json({
             error: "Nelze změnit stav přihlášky"
         });
     }
+
 
     res.json({ success: true });
 };

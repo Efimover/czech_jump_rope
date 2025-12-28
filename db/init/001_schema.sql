@@ -56,6 +56,28 @@ CREATE TABLE competition (
                              updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
 );
 
+CREATE TABLE registration_audit_log (
+                                        audit_id SERIAL PRIMARY KEY,
+
+                                        registration_id INT NOT NULL
+                                            REFERENCES registration(registration_id)
+                                                ON DELETE CASCADE,
+
+                                        actor_user_id INT NOT NULL
+                                            REFERENCES user_account(user_id),
+
+                                        actor_role TEXT NOT NULL,
+
+                                        action TEXT NOT NULL,
+
+                                        old_status TEXT,
+                                        new_status TEXT,
+
+                                        message TEXT,
+
+                                        created_at TIMESTAMP NOT NULL DEFAULT NOW()
+);
+
 CREATE TABLE age_category (
                               age_category_id BIGSERIAL PRIMARY KEY,
                               code            VARCHAR(20) NOT NULL UNIQUE,  -- např. "U12_15" nebo "U16_PLUS"

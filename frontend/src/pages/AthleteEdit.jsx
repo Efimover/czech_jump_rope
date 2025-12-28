@@ -7,6 +7,7 @@ export default function AthleteEdit() {
     const { athleteId } = useParams();
     const navigate = useNavigate();
 
+
     const [loading, setLoading] = useState(true);
     const [form, setForm] = useState({
         first_name: "",
@@ -18,6 +19,10 @@ export default function AthleteEdit() {
     useEffect(() => {
         loadAthlete();
     }, [athleteId]);
+
+    // if (!canEdit) {
+    //     return <p>Nemáte oprávnění upravovat závodníka</p>;
+    // }
 
     async function loadAthlete() {
         try {
