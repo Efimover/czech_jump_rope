@@ -3,25 +3,30 @@ import { pool } from "../db/index.js";
 export const getTeamsByRegistration = async (req, res) => {
     const { registration_id } = req.params;
     const userId = req.user.user_id;
+    const role = req.user.active_role;
 
-    try {
-        const result = await pool.query(
-            `
-                SELECT t.team_id, t.name, t.created_at
-                FROM team t
-                         JOIN registration r ON r.registration_id = t.registration_id
-                WHERE t.registration_id = $1
-                  AND r.user_id = $2
-                ORDER BY t.created_at
-            `,
-            [registration_id, userId]
-        );
+    let query = `
+        SELECT t.team_id, t.name, t.created_at
+        FROM team t
+        JOIN registration r ON r.registration_id = t.registration_id
+        JOIN competition c ON c.competition_id = r.competition_id
+        WHERE r.registration_id = $1
+    `;
 
-        res.json(result.rows);
-    } catch (err) {
-        console.error("getTeamsByRegistration error:", err);
-        res.status(500).json({ error: "Server error" });
+    const params = [registration_id];
+
+    if (role === "soutezici" || role === "user") {
+        query += " AND r.user_id = $2";
+        params.push(userId);
     }
+
+    if (role === "organizator") {
+        query += " AND c.owner_id = $2";
+        params.push(userId);
+    }
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
 };
 
 export const createTeam = async (req, res) => {
@@ -33,7 +38,7 @@ export const createTeam = async (req, res) => {
     }
 
     try {
-        // ⚠️ kontrola stavu registrace
+        // ⚠kontrola stavu registrace
         const reg = await pool.query(
             `SELECT status FROM registration WHERE registration_id = $1`,
             [registration_id]

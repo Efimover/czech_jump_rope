@@ -9,29 +9,33 @@ import {
     validateAgeCategory,
     validateTeamCapacity
 } from "../utils/entryValidation.js";
-
 export const getEntriesByRegistration = async (req, res) => {
     const { registration_id } = req.params;
     const userId = req.user.user_id;
+    const role = req.user.active_role;
 
-    try {
-        const result = await pool.query(
-            `
-                SELECT e.*
-                FROM entry e
-                         JOIN registration r ON r.registration_id = e.registration_id
-                WHERE e.registration_id = $1
-                  AND r.user_id = $2
-            `,
-            [registration_id, userId]
-        );
+    let query = `
+        SELECT e.*
+        FROM entry e
+        JOIN registration r ON r.registration_id = e.registration_id
+        JOIN competition c ON c.competition_id = r.competition_id
+        WHERE e.registration_id = $1
+    `;
 
+    const params = [registration_id];
 
-        res.json(result.rows);
-    } catch (err) {
-        console.error("getEntriesByRegistration error:", err);
-        res.status(500).json({ error: "Server error" });
+    if (role === "soutezici" || role === "user") {
+        query += " AND r.user_id = $2";
+        params.push(userId);
     }
+
+    if (role === "organizator") {
+        query += " AND c.owner_id = $2";
+        params.push(userId);
+    }
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
 };
 
 

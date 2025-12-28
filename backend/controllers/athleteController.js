@@ -1,35 +1,36 @@
 import { pool } from "../db/index.js";
-import {
-    validateRegistrationOwnership,
-    validateRegistrationIsOpen,
-    createAthlete,
 
-} from "../services/athleteService.js";
 import { validateBirthYearForCompetition } from "../utils/validation.js";
 
 export const getAthletesByTeam = async (req, res) => {
     const { team_id } = req.params;
     const userId = req.user.user_id;
+    const role = req.user.active_role;
 
-    try {
-        const result = await pool.query(
-            `
-                SELECT a.*
-                FROM athlete a
-                         JOIN team_athlete ta ON ta.athlete_id = a.athlete_id
-                         JOIN team t ON t.team_id = ta.team_id
-                         JOIN registration r ON r.registration_id = t.registration_id
-                WHERE ta.team_id = $1
-                  AND r.user_id = $2
-            `,
-            [team_id, userId]
-        );
+    let query = `
+        SELECT a.*
+        FROM athlete a
+        JOIN team_athlete ta ON ta.athlete_id = a.athlete_id
+        JOIN team t ON t.team_id = ta.team_id
+        JOIN registration r ON r.registration_id = t.registration_id
+        JOIN competition c ON c.competition_id = r.competition_id
+        WHERE t.team_id = $1
+    `;
 
-        res.json(result.rows);
-    } catch (err) {
-        console.error("getAthletesByTeam error:", err);
-        res.status(500).json({ error: "Server error" });
+    const params = [team_id];
+
+    if (role === "soutezici" || role === "user") {
+        query += " AND r.user_id = $2";
+        params.push(userId);
     }
+
+    if (role === "organizator") {
+        query += " AND c.owner_id = $2";
+        params.push(userId);
+    }
+
+    const result = await pool.query(query, params);
+    res.json(result.rows);
 };
 
 export const createAthleteForTeam = async (req, res) => {
