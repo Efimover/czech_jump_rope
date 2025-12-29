@@ -1,6 +1,7 @@
 import { pool } from "../db/index.js";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
+import { verifyGoogleToken } from "../services/googleAuthService.js";
 
 // ---------------- REGISTER ----------------
 export const registerUser = async (req, res) => {
@@ -127,6 +128,124 @@ export const loginUser = async (req, res) => {
     } catch (err) {
         console.error("Login error:", err);
         res.status(500).json({ message: "Server error." });
+    }
+};
+
+//Login with Google
+
+export const loginWithGoogle = async (req, res) => {
+    try {
+        const { idToken } = req.body;
+
+        const payload = await verifyGoogleToken(idToken);
+        const {
+            sub: googleId,
+            email,
+            given_name,
+            family_name
+        } = payload;
+
+        // 1️⃣ najdi / vytvoř uživatele
+        let userRes = await pool.query(
+            `
+                SELECT *
+                FROM user_account
+                WHERE google_id = $1 OR email = $2
+            `,
+            [googleId, email]
+        );
+
+        let user;
+
+        if (userRes.rowCount === 0) {
+            // vytvoření nového uživatele
+            const insert = await pool.query(
+                `
+                    INSERT INTO user_account (
+                        email,
+                        first_name,
+                        last_name,
+                        google_id,
+                        auth_provider,
+                        active_role
+                    )
+                    VALUES ($1,$2,$3,$4,'google','user')
+                    RETURNING *
+                `,
+                [email, given_name, family_name, googleId]
+            );
+
+            user = insert.rows[0];
+
+            // ➕ přiřaď roli "user"
+            const roleRes = await pool.query(
+                `SELECT role_id FROM role WHERE name = 'user'`
+            );
+
+            await pool.query(
+                `
+                    INSERT INTO role_user (user_id, role_id)
+                    VALUES ($1,$2)
+                `,
+                [user.user_id, roleRes.rows[0].role_id]
+            );
+        } else {
+            user = userRes.rows[0];
+
+            // doplň google_id pokud chybí
+            if (!user.google_id) {
+                await pool.query(
+                    `
+                    UPDATE user_account
+                    SET google_id = $1, auth_provider = 'google'
+                    WHERE user_id = $2
+                    `,
+                    [googleId, user.user_id]
+                );
+            }
+        }
+
+        // ⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇
+        // ✅ SEM PATŘÍ NAČTENÍ ROLÍ
+        const rolesRes = await pool.query(
+            `
+            SELECT r.name
+            FROM role_user ru
+            JOIN role r ON r.role_id = ru.role_id
+            WHERE ru.user_id = $1
+            `,
+            [user.user_id]
+        );
+
+        const roles = rolesRes.rows.map(r => r.name);
+        // ⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆
+
+        // 2️⃣ JWT
+        const token = jwt.sign(
+            {
+                user_id: user.user_id,
+                active_role: user.active_role
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: "7d" }
+        );
+
+        // 3️⃣ odpověď FE
+        res.json({
+            token,
+            user: {
+                user_id: user.user_id,
+                email: user.email,
+                first_name: user.first_name,
+                last_name: user.last_name,
+                roles,                 // 👈 tady použiješ načtené role
+                active_role: user.active_role
+            }
+        });
+
+    } catch (err) {
+        console.error("Google login error:", err);
+        res.status(401).json({ error: "Google authentication failed" });
     }
 };
 
@@ -299,8 +418,8 @@ export const changePassword = async (req, res) => {
         const hash = userRes.rows[0].password;
 
         if (!hash) {
-            return res.status(500).json({
-                error: "Uživatel nemá uložené heslo"
+            return res.status(400).json({
+                error: "Uživatel se přihlašuje přes externího poskytovatele"
             });
         }
 

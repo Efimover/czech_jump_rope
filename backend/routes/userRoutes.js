@@ -8,7 +8,7 @@ import {
     deleteUser,
     getMe,
     updateMe,
-    changePassword, switchActiveRole
+    changePassword, switchActiveRole, loginWithGoogle
 } from "../controllers/userController.js";
 import { validateRegister } from "../middleware/validateRegister.js";
 import {verifyToken} from "../middleware/authMiddleware.js";
@@ -43,5 +43,7 @@ router.post("/:user_id/roles",
     requireRole("admin"),
     assignRole
 );
+
+router.post("/auth/google", loginWithGoogle);
 
 export default router;

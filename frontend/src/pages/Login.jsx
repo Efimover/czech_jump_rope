@@ -1,7 +1,9 @@
 import React, { useState, useContext } from "react";
 import { AuthContext } from "../context/AuthContext";
+import { GoogleLogin } from "@react-oauth/google";
 import "../styles/auth.css";
 import { useNavigate } from "react-router-dom";
+import api from "../api/apiClient.js";
 
 export default function Login() {
     const { login } = useContext(AuthContext);
@@ -51,6 +53,19 @@ export default function Login() {
                         Přihlásit
                     </button>
                 </form>
+
+                <GoogleLogin
+                    onSuccess={async (credentialResponse) => {
+                        const res = await api.post("/auth/google", {
+                            idToken: credentialResponse.credential
+                        });
+
+                        login(res.data.token, res.data.user);
+                    }}
+                    onError={() => {
+                        alert("Přihlášení přes Google selhalo");
+                    }}
+                />
 
                 <p className="auth-footer">
                     Nemáte účet? <a href="/register">Registrovat</a>

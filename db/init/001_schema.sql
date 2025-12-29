@@ -14,8 +14,10 @@ CREATE TABLE "user_account" (
                             date_birth     DATE,
                             created_at     TIMESTAMP WITH TIME ZONE DEFAULT now(),
                             updated_at     TIMESTAMP WITH TIME ZONE DEFAULT now(),
-                            password VARCHAR(255) NOT NULL,
-                            active_role VARCHAR(50)
+                            password VARCHAR(255),
+                            active_role VARCHAR(50),
+                            google_id TEXT UNIQUE,
+                            auth_provider TEXT DEFAULT 'local'
 );
 
 CREATE TABLE "role" (
