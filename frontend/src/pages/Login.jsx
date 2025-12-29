@@ -6,7 +6,7 @@ import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient.js";
 
 export default function Login() {
-    const { login } = useContext(AuthContext);
+    const { login, loginWithGoogle } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [email, setEmail] = useState("");
@@ -21,7 +21,11 @@ export default function Login() {
             await login(email, password);
             navigate("/"); // redirect po loginu
         } catch (err) {
-            setError("Invalid email or password");
+            if (err.response?.data?.provider === "google") {
+                setError("Použijte přihlášení přes Google");
+            } else {
+                setError("Neplatný email nebo heslo");
+            }
         }
     };
 
@@ -56,11 +60,12 @@ export default function Login() {
 
                 <GoogleLogin
                     onSuccess={async (credentialResponse) => {
-                        const res = await api.post("/auth/google", {
-                            idToken: credentialResponse.credential
-                        });
-
-                        login(res.data.token, res.data.user);
+                        try {
+                            await loginWithGoogle(credentialResponse.credential);
+                            navigate("/");
+                        } catch (e) {
+                            alert("Google login selhal");
+                        }
                     }}
                     onError={() => {
                         alert("Přihlášení přes Google selhalo");

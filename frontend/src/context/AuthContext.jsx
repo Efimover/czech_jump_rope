@@ -3,11 +3,11 @@ import api from "../api/apiClient";
 
 export const AuthContext = createContext();
 
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
-    // načti uživatele při obnově stránky
     useEffect(() => {
         const token = localStorage.getItem("token");
         const userData = localStorage.getItem("user");
@@ -18,22 +18,26 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-
-
+    // klasický login
     const login = async (email, password) => {
         const res = await api.post("/users/login", { email, password });
+
         localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        setUser(res.data.user);
 
-        const me = await api.get("/users/me");
-
-        localStorage.setItem("user", JSON.stringify(me.data));
-        setUser(me.data);
-
-        return me.data;
+        return res.data.user;
     };
 
-    const register = async (form) => {
-        return api.post("/users/register", form);
+    // Google login
+    const loginWithGoogle = async (idToken) => {
+        const res = await api.post("/users/auth/google", { idToken });
+
+        localStorage.setItem("token", res.data.token);
+        localStorage.setItem("user", JSON.stringify(res.data.user));
+        setUser(res.data.user);
+
+        return res.data.user;
     };
 
     const logout = () => {
@@ -43,8 +47,11 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, login, register, logout, loading }}>
+        <AuthContext.Provider
+            value={{ user, login, loginWithGoogle, logout, loading }}
+        >
             {children}
         </AuthContext.Provider>
     );
 };
+

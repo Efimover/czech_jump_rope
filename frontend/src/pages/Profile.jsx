@@ -29,6 +29,8 @@ export default function Profile() {
         setEditing(false);
     }
 
+    const isLocalAccount = user.auth_provider === "local";
+
     return (
         <div className="profile-wrapper">
             <h1>Můj profil</h1>
@@ -71,10 +73,19 @@ export default function Profile() {
                 </div>
 
                 {/* ZMĚNA HESLA */}
-                {editing && (
+                {editing && isLocalAccount && (
                     <div className="profile-section">
                         <h3>Změna hesla</h3>
                         <ChangePassword />
+                    </div>
+                )}
+
+                {/* INFO PRO GOOGLE ÚČTY */}
+                {editing && !isLocalAccount && (
+                    <div className="profile-section">
+                        <p className="profile-hint">
+                            Tento účet je přihlášen přes Google – heslo nelze změnit.
+                        </p>
                     </div>
                 )}
 

@@ -14,12 +14,27 @@ export const registerUser = async (req, res) => {
 
         // Check existence
         const existingUser = await pool.query(
-            `SELECT user_id FROM user_account WHERE email = $1`,
+            `
+                SELECT auth_provider
+                FROM user_account
+                WHERE email = $1
+            `,
             [email]
         );
 
-        if (existingUser.rows.length > 0) {
-            return res.status(400).json({ message: "User already exists." });
+        if (existingUser.rowCount > 0) {
+            const provider = existingUser.rows[0].auth_provider;
+
+            if (provider === "google") {
+                return res.status(400).json({
+                    error: "Účet s tímto e-mailem již existuje a používá Google přihlášení",
+                    provider: "google"
+                });
+            }
+
+            return res.status(400).json({
+                error: "Účet s tímto e-mailem již existuje"
+            });
         }
 
         // Hash password
@@ -74,6 +89,13 @@ export const loginUser = async (req, res) => {
         const user = result.rows[0];
         if (!user) {
             return res.status(400).json({ message: "Invalid email or password." });
+        }
+
+        if (!user.password) {
+            return res.status(400).json({
+                error: "Tento účet používá přihlášení přes Google",
+                provider: "google"
+            });
         }
 
         const match = await bcrypt.compare(password, user.password);
@@ -134,119 +156,109 @@ export const loginUser = async (req, res) => {
 //Login with Google
 
 export const loginWithGoogle = async (req, res) => {
-    try {
-        const { idToken } = req.body;
+    const { idToken } = req.body;
+    const payload = await verifyGoogleToken(idToken);
 
-        const payload = await verifyGoogleToken(idToken);
-        const {
-            sub: googleId,
-            email,
-            given_name,
-            family_name
-        } = payload;
+    const {
+        sub: googleId,
+        email,
+        given_name,
+        family_name
+    } = payload;
 
-        // 1️⃣ najdi / vytvoř uživatele
-        let userRes = await pool.query(
+    // 1️⃣ najdi uživatele podle emailu
+    let userRes = await pool.query(
+        `SELECT * FROM user_account WHERE email = $1`,
+        [email]
+    );
+
+    let user;
+
+    if (userRes.rowCount === 0) {
+        // 2️⃣ neexistuje → vytvoř nový Google účet
+        const insert = await pool.query(
             `
-                SELECT *
-                FROM user_account
-                WHERE google_id = $1 OR email = $2
+            INSERT INTO user_account (
+                email,
+                first_name,
+                last_name,
+                google_id,
+                auth_provider,
+                active_role
+            )
+            VALUES ($1,$2,$3,$4,'google','user')
+            RETURNING *
             `,
-            [googleId, email]
+            [email, given_name, family_name, googleId]
         );
 
-        let user;
+        user = insert.rows[0];
 
-        if (userRes.rowCount === 0) {
-            // vytvoření nového uživatele
-            const insert = await pool.query(
-                `
-                    INSERT INTO user_account (
-                        email,
-                        first_name,
-                        last_name,
-                        google_id,
-                        auth_provider,
-                        active_role
-                    )
-                    VALUES ($1,$2,$3,$4,'google','user')
-                    RETURNING *
-                `,
-                [email, given_name, family_name, googleId]
-            );
+        // role "user"
+        const roleRes = await pool.query(
+            `SELECT role_id FROM role WHERE name = 'user'`
+        );
 
-            user = insert.rows[0];
+        await pool.query(
+            `INSERT INTO role_user (user_id, role_id) VALUES ($1,$2)`,
+            [user.user_id, roleRes.rows[0].role_id]
+        );
 
-            // ➕ přiřaď roli "user"
-            const roleRes = await pool.query(
-                `SELECT role_id FROM role WHERE name = 'user'`
-            );
+    } else {
+        // 3️⃣ existuje → PROPOJ
+        user = userRes.rows[0];
 
+        if (!user.google_id) {
             await pool.query(
                 `
-                    INSERT INTO role_user (user_id, role_id)
-                    VALUES ($1,$2)
+                UPDATE user_account
+                SET google_id = $1,
+                    auth_provider = CASE
+                        WHEN auth_provider = 'local' THEN 'both'
+                        ELSE auth_provider
+                    END
+                WHERE user_id = $2
                 `,
-                [user.user_id, roleRes.rows[0].role_id]
+                [googleId, user.user_id]
             );
-        } else {
-            user = userRes.rows[0];
-
-            // doplň google_id pokud chybí
-            if (!user.google_id) {
-                await pool.query(
-                    `
-                    UPDATE user_account
-                    SET google_id = $1, auth_provider = 'google'
-                    WHERE user_id = $2
-                    `,
-                    [googleId, user.user_id]
-                );
-            }
         }
-
-        // ⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇⬇
-        // ✅ SEM PATŘÍ NAČTENÍ ROLÍ
-        const rolesRes = await pool.query(
-            `
-            SELECT r.name
-            FROM role_user ru
-            JOIN role r ON r.role_id = ru.role_id
-            WHERE ru.user_id = $1
-            `,
-            [user.user_id]
-        );
-
-        const roles = rolesRes.rows.map(r => r.name);
-        // ⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆⬆
-
-        // 2️⃣ JWT
-        const token = jwt.sign(
-            {
-                user_id: user.user_id,
-                active_role: user.active_role
-            },
-            process.env.JWT_SECRET,
-            { expiresIn: "7d" }
-        );
-
-        // 3️⃣ odpověď FE
-        res.json({
-            token,
-            user: {
-                user_id: user.user_id,
-                email: user.email,
-                first_name: user.first_name,
-                last_name: user.last_name,
-                roles,                 // 👈 tady použiješ načtené role
-                active_role: user.active_role
-            }
-        });
-
-    } catch (err) {
-        console.error("Google login error:", err);
-        res.status(401).json({ error: "Google authentication failed" });
     }
+
+    // 4️⃣ načti role
+    const rolesRes = await pool.query(
+        `
+        SELECT r.name
+        FROM role_user ru
+        JOIN role r ON r.role_id = ru.role_id
+        WHERE ru.user_id = $1
+        `,
+        [user.user_id]
+    );
+
+    const roles = rolesRes.rows.map(r => r.name);
+
+    // 5️⃣ JWT
+    const token = jwt.sign(
+        {
+            user_id: user.user_id,
+            active_role: user.active_role
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "7d" }
+    );
+
+    res.json({
+        token,
+        user: {
+            user_id: user.user_id,
+            email: user.email,
+            first_name: user.first_name,
+            last_name: user.last_name,
+            roles,
+            active_role: user.active_role,
+            auth_provider: user.auth_provider
+        }
+    });
 };
 
 // ---------------- PROFILE (protected) ----------------
@@ -275,6 +287,7 @@ export const getMe = async (req, res) => {
                 u.last_name,
                 u.email,
                 u.active_role,
+                u.auth_provider,
                 json_agg(r.name) AS roles
             FROM user_account u
                      JOIN role_user ru ON ru.user_id = u.user_id
@@ -389,22 +402,24 @@ export const deleteUser = async (req, res) => {
     }
 };
 
+
+// Zmena hesla, zakazano uctu GOOGLE
+
 export const changePassword = async (req, res) => {
     try {
         const userId = req.user.user_id;
         const { currentPassword, newPassword } = req.body;
 
-        // 1️⃣ validace vstupu
         if (!currentPassword || !newPassword) {
             return res.status(400).json({
                 error: "Chybí aktuální nebo nové heslo"
             });
         }
 
-        // 2️⃣ načti uživatele
+        // načti uživatele + auth_provider
         const userRes = await pool.query(
             `
-            SELECT password
+            SELECT password, auth_provider
             FROM user_account
             WHERE user_id = $1
             `,
@@ -415,32 +430,31 @@ export const changePassword = async (req, res) => {
             return res.status(404).json({ error: "Uživatel nenalezen" });
         }
 
-        const hash = userRes.rows[0].password;
+        const { password, auth_provider } = userRes.rows[0];
 
-        if (!hash) {
+        // ZÁKAZ pro Google účty
+        if (auth_provider === "google") {
             return res.status(400).json({
-                error: "Uživatel se přihlašuje přes externího poskytovatele"
+                error: "Uživatel přihlášený přes Google nemůže měnit heslo"
             });
         }
 
-        // 3️⃣ ověř staré heslo
-        const match = await bcrypt.compare(currentPassword, hash);
-
+        // ověř staré heslo
+        const match = await bcrypt.compare(currentPassword, password);
         if (!match) {
             return res.status(400).json({
                 error: "Aktuální heslo není správné"
             });
         }
 
-        // 4️⃣ zahashuj nové heslo
+        //  nové heslo
         const newHash = await bcrypt.hash(newPassword, 10);
 
-        // 5️⃣ ulož nové heslo
         await pool.query(
             `
-            UPDATE user_account
-            SET password = $1
-            WHERE user_id = $2
+                UPDATE user_account
+                SET password = $1
+                WHERE user_id = $2
             `,
             [newHash, userId]
         );

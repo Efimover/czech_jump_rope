@@ -2,9 +2,10 @@ import React, { useState, useContext } from "react";
 import "../styles/auth.css";
 import { AuthContext } from "../context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import {GoogleLogin} from "@react-oauth/google";
 
 export default function Register() {
-    const { register } = useContext(AuthContext);
+    const { register, loginWithGoogle } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const [form, setForm] = useState({
@@ -25,9 +26,19 @@ export default function Register() {
             await register(form);
             navigate("/login");
         } catch (err) {
-            // pokud server vrátil message, zobraz ho
-            const msg = err?.response?.data?.message || err?.response?.data?.error || "Registration failed";
-            setError(msg);
+            const data = err?.response?.data;
+
+            if (data?.provider === "google") {
+                setError(
+                    "Tento e-mail je již registrován přes Google. Použijte přihlášení přes Google."
+                );
+            } else {
+                setError(
+                    data?.message ||
+                    data?.error ||
+                    "Registrace se nezdařila"
+                );
+            }
         }
     };
 
@@ -75,6 +86,20 @@ export default function Register() {
 
                     <button type="submit" className="auth-button">Registrovat</button>
                 </form>
+
+                <GoogleLogin
+                    onSuccess={async (credentialResponse) => {
+                        try {
+                            await loginWithGoogle(credentialResponse.credential);
+                            navigate("/");
+                        } catch (e) {
+                            alert("Google registrace selhal");
+                        }
+                    }}
+                    onError={() => {
+                        alert("Registrace přes Google selhalo");
+                    }}
+                />
 
                 <p className="auth-footer">
                     Máte účet? <a href="/login">Přihlásit</a>
