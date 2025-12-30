@@ -29,7 +29,7 @@ export default function Home() {
 
     // ACTIVE ROLE
     const canManageUsers =
-        user?.roles?.includes("admin");
+        user?.active_role === "admin";
 
     // ---------------- LOAD COMPETITIONS ----------------
     useEffect(() => {
