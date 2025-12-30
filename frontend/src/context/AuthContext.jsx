@@ -18,6 +18,11 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
+    // registrace (LOCAL)
+    const register = async (form) => {
+        return api.post("/users/register", form);
+    };
+
     // klasický login
     const login = async (email, password) => {
         const res = await api.post("/users/login", { email, password });
@@ -48,7 +53,7 @@ export const AuthProvider = ({ children }) => {
 
     return (
         <AuthContext.Provider
-            value={{ user, login, loginWithGoogle, logout, loading }}
+            value={{ user, login, register, loginWithGoogle, logout, loading }}
         >
             {children}
         </AuthContext.Provider>

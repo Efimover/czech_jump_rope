@@ -17,11 +17,13 @@ export const validateRegister = (req, res, next) => {
 
     if (!isValidPassword(password)) {
         return res.status(400).json({
-            message: "Password must be at least 8 characters long, contain one uppercase letter and one symbol."
+            message:
+                "Password must be at least 8 characters long, contain one uppercase letter and one symbol."
         });
     }
 
-    if (!isValidBirthDate(date_birth)) {
+    // DATUM JE VOLITELNÉ
+    if (date_birth && !isValidBirthDate(date_birth)) {
         return res.status(400).json({ message: "Invalid birth date." });
     }
 

@@ -20,10 +20,13 @@ export default function Register() {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        console.log("REGISTER SUBMIT", form);
         setError("");
 
         try {
+            console.log("CALLING register()");
             await register(form);
+            console.log("REGISTER OK");
             navigate("/login");
         } catch (err) {
             const data = err?.response?.data;

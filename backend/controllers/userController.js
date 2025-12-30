@@ -39,13 +39,16 @@ export const registerUser = async (req, res) => {
 
         // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
+        const birthDate =
+            date_birth && date_birth.trim() !== "" ? date_birth : null;
+
 
         // Insert user
         const result = await pool.query(
-            `INSERT INTO user_account (first_name, last_name, email, password, date_birth)
-             VALUES ($1, $2, $3, $4, $5)
+            `INSERT INTO user_account (first_name, last_name, email, password, date_birth, auth_provider, active_role)
+             VALUES ($1, $2, $3, $4, $5, 'local', 'user')
              RETURNING user_id, email, first_name, last_name, date_birth`,
-            [first_name, last_name, email, hashedPassword, date_birth]
+            [first_name, last_name, email, hashedPassword, birthDate]
         );
 
         const user = result.rows[0];
@@ -261,21 +264,6 @@ export const loginWithGoogle = async (req, res) => {
     });
 };
 
-// ---------------- PROFILE (protected) ----------------
-export const getProfile = async (req, res) => {
-    try {
-        const result = await pool.query(
-            `SELECT user_id, email, first_name, last_name, date_birth FROM user_account WHERE user_id = $1`,
-            [req.user.user_id]
-        );
-
-        res.json(result.rows[0]);
-
-    } catch (err) {
-        console.error("Profile error:", err);
-        res.status(500).json({ message: "Server error." });
-    }
-};
 export const getMe = async (req, res) => {
     const userId = req.user.user_id;
 

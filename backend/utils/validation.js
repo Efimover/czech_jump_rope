@@ -12,7 +12,7 @@ export const isValidPassword = (password) => {
 };
 
 export const isValidBirthDate = (date) => {
-    if (!date) return false;
+    if (!date || date === "") return true;
 
     const birth = new Date(date);
     const today = new Date();
@@ -24,7 +24,7 @@ export const isValidBirthDate = (date) => {
 
     // člověk nemůže mít 0 let (musí být aspoň 1 rok)
     const age = today.getFullYear() - birth.getFullYear();
-    return age >= 1 && age <= 120; // rozumný limit
+    return age >= 5 && age <= 120;
 };
 
 // ================================

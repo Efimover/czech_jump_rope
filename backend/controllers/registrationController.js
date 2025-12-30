@@ -60,6 +60,7 @@ export const createRegistration = async (req, res) => {
     try {
         const { competition_id, contact_name, contact_email } = req.body;
         const userId = req.user.user_id;
+        const role = req.user.active_role;
 
         // 1️⃣ Už existuje přihláška?
         const existing = await pool.query(
@@ -142,6 +143,7 @@ export const createRegistration = async (req, res) => {
 export const submitRegistration = async (req, res) => {
     const { registration_id } = req.params;
     const userId = req.user.user_id;
+    const role = req.user.active_role;
 
     try {
         // 1️⃣ ověř vlastnictví a stav
