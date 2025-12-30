@@ -48,3 +48,26 @@
     color: #c62828;
     font-size: 0.9rem;
 }
+
+
+.btn-danger {
+    background: #c62828;
+    color: white;
+    border: none;
+    padding: 0.6rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.btn-danger:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.danger-zone {
+    margin-top: 2rem;
+    padding: 1rem;
+    border: 2px solid #c62828;
+    border-radius: 8px;
+    background: #fff5f5;
+}

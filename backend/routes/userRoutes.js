@@ -8,7 +8,7 @@ import {
     deleteUser,
     getMe,
     updateMe,
-    changePassword, switchActiveRole, loginWithGoogle, removeRole, getAllUsersForAdmin
+    changePassword, switchActiveRole, loginWithGoogle, removeRole, getAllUsersForAdmin, deleteUserCompletely
 } from "../controllers/userController.js";
 import { validateRegister } from "../middleware/validateRegister.js";
 import {verifyToken} from "../middleware/authMiddleware.js";
@@ -39,6 +39,13 @@ router.get("/:user_id", getUser);
 router.delete("/:user_id", deleteUser); // Delete user
 
 router.delete("/:user_id/roles/:role", verifyToken, requireRole("admin"), removeRole);
+
+router.delete(
+    "/admin/users/:user_id",
+    verifyToken,
+    requireRole("admin"),
+    deleteUserCompletely
+);
 
 router.put("/:user_id", verifyToken, updateMe);
 

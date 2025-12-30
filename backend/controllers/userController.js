@@ -572,3 +572,129 @@ export const removeRole = async (req, res) => {
 
     res.json({ success: true });
 };
+
+
+export const deleteUserCompletely = async (req, res) => {
+    const { user_id } = req.params;
+    const adminId = req.user.user_id;
+
+    if (Number(user_id) === adminId) {
+        return res.status(400).json({
+            error: "Nemůžete smazat sami sebe"
+        });
+    }
+
+    const client = await pool.connect();
+
+    try {
+        await client.query("BEGIN");
+
+        // 1️ Zjistit role uživatele
+        const rolesRes = await client.query(
+            `
+            SELECT r.name
+            FROM role_user ru
+            JOIN role r ON r.role_id = ru.role_id
+            WHERE ru.user_id = $1
+            `,
+            [user_id]
+        );
+
+        const roles = rolesRes.rows.map(r => r.name);
+
+        // 2 Ohrana poslední admin
+        if (roles.includes("admin")) {
+            const adminCount = await client.query(
+                `
+                SELECT COUNT(*)::int AS count
+                FROM role_user ru
+                JOIN role r ON r.role_id = ru.role_id
+                WHERE r.name = 'admin'
+                `
+            );
+
+            if (adminCount.rows[0].count <= 1) {
+                return res.status(400).json({
+                    error: "Nelze smazat posledního administrátora"
+                });
+            }
+        }
+
+        // 3️MAZANI ZÁVISLÝCH DAT
+
+        // ENTRY
+        await client.query(
+            `
+                DELETE FROM entry
+                WHERE registration_id IN (
+                    SELECT registration_id
+                    FROM registration
+                    WHERE user_id = $1
+                )
+            `,
+            [user_id]
+        );
+
+// TEAM_ATHLETE
+        await client.query(
+            `
+                DELETE FROM team_athlete
+                WHERE team_id IN (
+                    SELECT team_id
+                    FROM team
+                    WHERE registration_id IN (
+                        SELECT registration_id
+                        FROM registration
+                        WHERE user_id = $1
+                    )
+                )
+            `,
+            [user_id]
+        );
+
+// TEAM
+        await client.query(
+            `
+                DELETE FROM team
+                WHERE registration_id IN (
+                    SELECT registration_id
+                    FROM registration
+                    WHERE user_id = $1
+                )
+            `,
+            [user_id]
+        );
+
+// REGISTRATION
+        await client.query(
+            `DELETE FROM registration WHERE user_id = $1`,
+            [user_id]
+        );
+
+// ROLE_USER
+        await client.query(
+            `DELETE FROM role_user WHERE user_id = $1`,
+            [user_id]
+        );
+
+// USER
+        await client.query(
+            `DELETE FROM user_account WHERE user_id = $1`,
+            [user_id]
+        );
+
+        await client.query("COMMIT");
+
+        res.json({
+            success: true,
+            message: "Uživatel byl trvale smazán"
+        });
+
+    } catch (err) {
+        await client.query("ROLLBACK");
+        console.error("deleteUserCompletely error:", err);
+        res.status(500).json({ error: "Server error" });
+    } finally {
+        client.release();
+    }
+};

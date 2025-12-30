@@ -8,6 +8,7 @@ export default function EditUserModal({ user, onClose, onSaved }) {
     const [roles, setRoles] = useState(user.roles);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState("");
+    const [confirmText, setConfirmText] = useState("");
 
     const isAdminRole = user.roles.includes("admin");
 
@@ -98,6 +99,43 @@ export default function EditUserModal({ user, onClose, onSaved }) {
                     </button>
                 </div>
             </div>
+
+            <div className="danger-zone">
+                <h3>⚠️ Nebezpečná akce</h3>
+
+                <p>
+                    Smazání uživatele je <strong>nevratné</strong>.
+                    Budou odstraněna všechna jeho data.
+                </p>
+
+                <p>
+                    Pro potvrzení napište <strong>SMAZAT</strong>
+                </p>
+
+                <input
+                    value={confirmText}
+                    onChange={e => setConfirmText(e.target.value)}
+                    placeholder="SMAZAT"
+                />
+
+                <button
+                    className="btn-danger"
+                    disabled={confirmText !== "SMAZAT"}
+                    onClick={async () => {
+                        try {
+                            await api.delete(`/users/admin/users/${user.user_id}`);
+                            onSaved();
+                            onClose();
+                        } catch (e) {
+                            setError(e.response?.data?.error || "Mazání selhalo");
+                        }
+                    }}
+                >
+                    🗑 Trvale smazat uživatele
+                </button>
+            </div>
+
+
         </div>
     );
 }

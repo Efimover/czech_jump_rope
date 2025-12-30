@@ -48,6 +48,14 @@ export default function AdminUsers() {
                                 ⚙️ Upravit
                             </button>
                         </td>
+                        <td>
+                            <button
+                                className="btn-danger"
+                                onClick={() => setSelectedUser(u)}
+                            >
+                                🗑 Smazat
+                            </button>
+                        </td>
                     </tr>
                 ))}
                 </tbody>
