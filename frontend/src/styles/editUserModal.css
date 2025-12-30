@@ -1,19 +1,25 @@
 .modal-backdrop {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.4);
+    background: rgba(0, 0, 0, 0.45);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 1000;
+
+    animation: fadeIn 0.2s ease-out;
 }
 
 .modal-card {
-    background: white;
-    border-radius: 10px;
+    background: #fff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 520px;
     padding: 24px;
-    width: 420px;
-    max-width: 90%;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+
+    animation: modalEnter 0.25s ease-out;
+    transform-origin: center;
 }
 
 .modal-card h2 {
@@ -21,7 +27,14 @@
 }
 
 .modal-section {
-    margin-bottom: 14px;
+    margin-bottom: 16px;
+    font-size: 15px;
+}
+
+.modal-section strong {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
 }
 
 .role-checkbox {
@@ -29,6 +42,11 @@
     align-items: center;
     gap: 8px;
     margin: 6px 0;
+    cursor: pointer;
+}
+
+.role-checkbox input {
+    cursor: pointer;
 }
 
 .modal-actions {
@@ -38,25 +56,29 @@
     margin-top: 20px;
 }
 
-.hint {
-    font-size: 0.85rem;
-    color: #666;
-    margin-top: 10px;
-}
-
 .error {
     color: #c62828;
-    font-size: 0.9rem;
+    margin-top: 8px;
+    font-size: 14px;
 }
 
+.hint {
+    font-size: 13px;
+    color: #666;
+    margin-top: 6px;
+}
 
 .btn-danger {
-    background: #c62828;
+    background: #d32f2f;
     color: white;
-    border: none;
-    padding: 0.6rem 1rem;
-    border-radius: 6px;
-    cursor: pointer;
+    border-radius: 8px;
+    padding: 10px 14px;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.btn-danger:hover:not(:disabled) {
+    background: #b71c1c;
+    transform: translateY(-1px);
 }
 
 .btn-danger:disabled {
@@ -65,9 +87,46 @@
 }
 
 .danger-zone {
-    margin-top: 2rem;
-    padding: 1rem;
-    border: 2px solid #c62828;
+    margin-top: 24px;
+    padding: 16px;
+    border-radius: 12px;
+    background: #fff4f4;
+    border: 1px solid #ffd2d2;
+
+    animation: fadeIn 0.2s ease-out;
+}
+
+.danger-zone h3 {
+    color: #c62828;
+    margin-bottom: 10px;
+}
+
+.danger-zone input {
+    width: 100%;
+    padding: 10px;
     border-radius: 8px;
-    background: #fff5f5;
+    border: 1px solid #ccc;
+    margin: 10px 0 14px;
+    font-size: 14px;
+}
+
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes modalEnter {
+    from {
+        opacity: 0;
+        transform: scale(0.95) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }

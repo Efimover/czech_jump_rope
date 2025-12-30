@@ -6,6 +6,11 @@ import "../styles/adminUsers.css";
 export default function AdminUsers() {
     const [users, setUsers] = useState([]);
     const [selectedUser, setSelectedUser] = useState(null);
+    const [mode, setMode] = useState(null);
+
+    const [search, setSearch] = useState("");
+    const [roleFilter, setRoleFilter] = useState("all");
+
 
     const loadUsers = async () => {
         try {
@@ -21,9 +26,42 @@ export default function AdminUsers() {
         loadUsers();
     }, []);
 
+    const filteredUsers = users.filter(u => {
+        const text = search.toLowerCase();
+
+        const matchesText =
+            u.email.toLowerCase().includes(text) ||
+            u.first_name?.toLowerCase().includes(text) ||
+            u.last_name?.toLowerCase().includes(text);
+
+        const matchesRole =
+            roleFilter === "all" || u.roles.includes(roleFilter);
+
+        return matchesText && matchesRole;
+    });
+
+
     return (
         <div className="admin-users-wrapper">
             <h1>Uživatelé systému</h1>
+            <div className="admin-users-filters">
+                <input
+                    type="text"
+                    placeholder="🔍 Hledat podle emailu nebo jména"
+                    value={search}
+                    onChange={e => setSearch(e.target.value)}
+                />
+
+                <select
+                    value={roleFilter}
+                    onChange={e => setRoleFilter(e.target.value)}
+                >
+                    <option value="all">Všechny role</option>
+                    <option value="user">user</option>
+                    <option value="organizator">organizator</option>
+                    <option value="admin">admin</option>
+                </select>
+            </div>
 
             <table className="admin-users-table">
                 <thead>
@@ -35,7 +73,14 @@ export default function AdminUsers() {
                 </tr>
                 </thead>
                 <tbody>
-                {users.map(u => (
+                {filteredUsers.length === 0 && (
+                    <tr>
+                        <td colSpan="5" className="no-results">
+                            Žádní uživatelé neodpovídají filtru
+                        </td>
+                    </tr>
+                )}
+                {filteredUsers.map(u => (
                     <tr key={u.user_id}>
                         <td>{u.email}</td>
                         <td>{u.roles.join(", ")}</td>
@@ -43,7 +88,7 @@ export default function AdminUsers() {
                         <td>
                             <button
                                 className="btn-outline"
-                                onClick={() => setSelectedUser(u)}
+                                onClick={() => setSelectedUser({ ...u, mode: "edit" })}
                             >
                                 ⚙️ Upravit
                             </button>
@@ -51,7 +96,7 @@ export default function AdminUsers() {
                         <td>
                             <button
                                 className="btn-danger"
-                                onClick={() => setSelectedUser(u)}
+                                onClick={() => setSelectedUser({ ...u, mode: "delete" })}
                             >
                                 🗑 Smazat
                             </button>
@@ -64,7 +109,11 @@ export default function AdminUsers() {
             {selectedUser && (
                 <EditUserModal
                     user={selectedUser}
-                    onClose={() => setSelectedUser(null)}
+                    mode={mode}
+                    onClose={() => {
+                        setSelectedUser(null);
+                        setMode(null);
+                    }}
                     onSaved={loadUsers}
                 />
             )}

@@ -31,3 +31,28 @@
 .admin-users-table tr:hover {
     background: #fafafa;
 }
+
+.admin-users-filters {
+    display: flex;
+    gap: 12px;
+    margin: 16px 0 20px;
+}
+
+.admin-users-filters input,
+.admin-users-filters select {
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 14px;
+    min-width: 220px;
+}
+
+.admin-users-filters input {
+    flex: 1;
+}
+
+.no-results {
+    text-align: center;
+    padding: 20px;
+    color: #777;
+}
