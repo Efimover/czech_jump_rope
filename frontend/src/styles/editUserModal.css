@@ -1,0 +1,50 @@
+.modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-card {
+    background: white;
+    border-radius: 10px;
+    padding: 24px;
+    width: 420px;
+    max-width: 90%;
+}
+
+.modal-card h2 {
+    margin-bottom: 16px;
+}
+
+.modal-section {
+    margin-bottom: 14px;
+}
+
+.role-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 6px 0;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.hint {
+    font-size: 0.85rem;
+    color: #666;
+    margin-top: 10px;
+}
+
+.error {
+    color: #c62828;
+    font-size: 0.9rem;
+}

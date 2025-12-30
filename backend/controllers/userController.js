@@ -312,7 +312,7 @@ export const updateMe = async (req, res) => {
 
 export const assignRole = async (req, res) => {
     try {
-        const { id } = req.params;      // user_id
+        const { user_id } = req.params;      // user_id
         const { role } = req.body;      // name role
 
         // zjisti role_id
@@ -332,10 +332,10 @@ export const assignRole = async (req, res) => {
             `INSERT INTO role_user (user_id, role_id)
              VALUES ($1, $2)
              ON CONFLICT DO NOTHING`,
-            [id, roleId]
+            [user_id, roleId]
         );
 
-        res.json({ message: `Role '${role}' assigned to user ${id}` });
+        res.json({ message: `Role '${role}' assigned to user ${user_id}` });
 
     } catch (err) {
         console.error("assignRole error:", err);
@@ -488,4 +488,87 @@ export const switchActiveRole = async (req, res) => {
     );
 
     res.json({ active_role: role });
+};
+
+
+export const getAllUsersForAdmin = async (req, res) => {
+    const result = await pool.query(`
+        SELECT
+            u.user_id,
+            u.email,
+            u.first_name,
+            u.last_name,
+            u.active_role,
+            u.auth_provider,
+            ARRAY_AGG(r.name) AS roles
+        FROM user_account u
+        LEFT JOIN role_user ru ON ru.user_id = u.user_id
+        LEFT JOIN role r ON r.role_id = ru.role_id
+        GROUP BY u.user_id
+        ORDER BY u.created_at DESC
+    `);
+
+    res.json(result.rows);
+};
+
+
+export const removeRole = async (req, res) => {
+    const { user_id, role } = req.params;
+    const actorId = req.user.user_id;
+
+    // 1️Pokud se snažíš odebrat admin roli
+    if (role === "admin") {
+        // zjisti, zda cílový uživatel je admin
+        const isAdmin = await pool.query(
+            `
+            SELECT 1
+            FROM role_user ru
+            JOIN role r ON r.role_id = ru.role_id
+            WHERE ru.user_id = $1 AND r.name = 'admin'
+            `,
+            [user_id]
+        );
+
+        if (isAdmin.rowCount > 0) {
+            return res.status(403).json({
+                error: "Nelze odebrat roli admin administrátorovi"
+            });
+        }
+    }
+
+    const roleRes = await pool.query(
+        `SELECT role_id FROM role WHERE name = $1`,
+        [role]
+    );
+
+    if (roleRes.rowCount === 0) {
+        return res.status(404).json({ error: "Role not found" });
+    }
+
+    // 2️Oddebrání role
+    await pool.query(
+        `
+        DELETE FROM role_user
+        WHERE user_id = $1 AND role_id = $2
+        `,
+        [user_id, roleRes.rows[0].role_id]
+    );
+
+    // 3Fallback active_role
+    await pool.query(
+        `
+        UPDATE user_account
+        SET active_role = (
+            SELECT r.name
+            FROM role_user ru
+            JOIN role r ON r.role_id = ru.role_id
+            WHERE ru.user_id = $1
+            LIMIT 1
+        )
+        WHERE user_id = $1
+        `,
+        [user_id]
+    );
+
+    res.json({ success: true });
 };

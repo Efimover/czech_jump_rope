@@ -19,6 +19,9 @@ import CompetitionEdit from "./pages/CompetitionEdit.jsx";
 import AllRegistrations from "./pages/AllRegistrations.jsx";
 import RequireRole from "./components/RequireRole.jsx";
 
+import AdminUsers from "./pages/AdminUsers";
+import AdminRoute from "./components/AdminRoute.jsx";
+
 
 
 export default function App() {
@@ -73,6 +76,16 @@ export default function App() {
                         <RequireRole roles={["admin", "organizator"]}>
                             <AllRegistrations />
                         </RequireRole>
+                    }
+                />
+
+                {/* ADMIN */}
+                <Route
+                    path="/admin"
+                    element={
+                        <AdminRoute>
+                            <AdminUsers />
+                        </AdminRoute>
                     }
                 />
 

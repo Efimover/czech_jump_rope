@@ -1,0 +1,33 @@
+.admin-users-wrapper {
+    max-width: 1000px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.admin-users-wrapper h1 {
+    margin-bottom: 20px;
+}
+
+.admin-users-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.admin-users-table th,
+.admin-users-table td {
+    padding: 12px 14px;
+    border-bottom: 1px solid #eee;
+    text-align: left;
+}
+
+.admin-users-table th {
+    background: #f5f6f8;
+    font-weight: 600;
+}
+
+.admin-users-table tr:hover {
+    background: #fafafa;
+}

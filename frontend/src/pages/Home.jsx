@@ -27,6 +27,10 @@ export default function Home() {
         user?.active_role === "admin" ||
         user?.active_role === "organizator";
 
+    // ACTIVE ROLE
+    const canManageUsers =
+        user?.roles?.includes("admin");
+
     // ---------------- LOAD COMPETITIONS ----------------
     useEffect(() => {
         const timeout = setTimeout(() => {
@@ -157,6 +161,17 @@ export default function Home() {
                             🗂 Všechny přihlášky
                         </button>
                     )}
+
+                    {/* admin  */}
+                    {canManageUsers && (
+                        <button
+                            className="btn-outline"
+                            onClick={() => navigate("/admin")}
+                        >
+                            🗂 Všechny uživatele
+                        </button>
+                    )}
+
                 </div>
             )}
 
