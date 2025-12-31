@@ -17,7 +17,7 @@ const router = express.Router();
 router.get("/", getAllDisciplines);
 
 // vytvořit disciplínu
-router.post("/", verifyToken, requireRole("admin", "organizator"), requireCompetitionOwnerOrAdmin, createDiscipline);
+router.post("/", verifyToken, requireRole("admin", "organizator"), createDiscipline);
 
 // přiřadit disciplínu soutěži
 router.post("/assign", verifyToken, requireRole("admin", "organizator"), requireCompetitionOwnerOrAdmin, assignDisciplineToCompetition);
