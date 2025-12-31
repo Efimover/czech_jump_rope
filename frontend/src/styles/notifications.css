@@ -1,0 +1,49 @@
+.notifications-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.notification {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 14px 16px;
+    border: 1px solid #e5e7eb;
+    cursor: pointer;
+    transition: background 0.15s ease;
+}
+
+.notification:hover {
+    background: #f9fafb;
+}
+
+.notification.unread {
+    border-left: 4px solid #2563eb;
+    background: #eff6ff;
+}
+
+.notification strong {
+    display: block;
+    margin-bottom: 4px;
+}
+
+.notification .date {
+    font-size: 12px;
+    color: #6b7280;
+}
+.notification-bell {
+    position: relative;
+    font-size: 20px;
+}
+
+.notification-bell .badge {
+    position: absolute;
+    top: -6px;
+    right: -10px;
+    background: #ef4444;
+    color: white;
+    border-radius: 999px;
+    padding: 2px 6px;
+    font-size: 12px;
+    font-weight: 600;
+}

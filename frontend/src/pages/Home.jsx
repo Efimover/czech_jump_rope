@@ -1,9 +1,12 @@
 import React, { useEffect, useState, useContext } from "react";
+import { Link } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import api from "../api/apiClient";
 import "../styles/home.css";
 import { AuthContext } from "../context/AuthContext";
 import { formatDate } from "../utils/date";
+
+import NotificationBell from "../components/NotificationBell";
 
 export default function Home() {
     const navigate = useNavigate();
@@ -118,6 +121,13 @@ export default function Home() {
                                     </select>
                                 )}
                             </div>
+
+                            <nav className="nav-right">
+                                <Link to="/notifications" className="nav-link">
+                                    <NotificationBell/>
+                                </Link>
+
+                            </nav>
 
                             <button
                                 onClick={() => navigate("/profile")}

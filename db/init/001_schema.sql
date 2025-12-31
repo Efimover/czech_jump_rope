@@ -188,6 +188,23 @@ CREATE TABLE entry (
                        UNIQUE (athlete_id, competition_discipline_id) -- jedinečná účast jedince v jedné události
 );
 
+CREATE TABLE notification (
+                              notification_id BIGSERIAL PRIMARY KEY,
+
+                              user_id BIGINT NOT NULL
+                                  REFERENCES user_account(user_id)
+                                      ON DELETE CASCADE,
+
+                              type VARCHAR(50) NOT NULL, -- REGISTRATION_SUBMITTED, REGISTRATION_REOPENED…
+                              title TEXT NOT NULL,
+                              message TEXT NOT NULL,
+
+                              link TEXT, -- např. /competitions/5/registrations/12
+
+                              is_read BOOLEAN NOT NULL DEFAULT FALSE,
+                              created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
 -- Pokud je event.team_event = FALSE, pak team_group a team_id by měly být NULL.
 -- Můžeme přidat constraint pomocí triggeru nebo check přes poddotaz (Postgres check s poddotazem není povolen),
 -- proto doporučujeme ověřit v aplikační vrstvě nebo vytvořit TRIGGER (není součástí tohoto DDL).
@@ -202,3 +219,4 @@ CREATE INDEX idx_entry_registration ON entry (registration_id);
 CREATE INDEX idx_entry_competition_discipline ON entry (competition_discipline_id);
 CREATE INDEX idx_entry_athlete ON entry (athlete_id);
 
+CREATE INDEX idx_notification_user ON notification(user_id);

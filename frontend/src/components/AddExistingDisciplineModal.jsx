@@ -2,8 +2,6 @@ import {useEffect, useState} from "react";
 import api from "../api/apiClient.js";
 import Modal from "./Modal.jsx";
 
-
-
 export default function AddExistingDisciplineModal({ competitionId, onClose, onAdded }) {
     const [all, setAll] = useState([]);
 

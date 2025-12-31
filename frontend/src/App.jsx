@@ -21,6 +21,7 @@ import RequireRole from "./components/RequireRole.jsx";
 
 import AdminUsers from "./pages/AdminUsers";
 import AdminRoute from "./components/AdminRoute.jsx";
+import NotificationsPage from "./pages/NotificationsPage.jsx";
 
 
 
@@ -88,6 +89,8 @@ export default function App() {
                         </AdminRoute>
                     }
                 />
+
+                <Route path="/notifications" element={<NotificationsPage />} />
 
             </Routes>
         </BrowserRouter>

@@ -248,6 +248,35 @@ export const submitRegistration = async (req, res) => {
 
         res.json({ success: true });
 
+        //  NOTIFICATION – vlastníkovi soutěže
+        const notifRes = await pool.query(
+            `
+            SELECT c.owner_id, c.name, r.competition_id
+            FROM registration r
+            JOIN competition c ON c.competition_id = r.competition_id
+            WHERE r.registration_id = $1
+            `,
+            [registration_id]
+        );
+
+        if (notifRes.rowCount > 0) {
+            const { owner_id, name, competition_id } = notifRes.rows[0];
+
+            await pool.query(
+                `
+                INSERT INTO notification (user_id, type, title, message, link)
+                VALUES ($1, $2, $3, $4, $5)
+                `,
+                [
+                    owner_id,
+                    "REGISTRATION_SUBMITTED",
+                    "Nová přihláška",
+                    `Byla odeslána nová přihláška do soutěže „${name}“.`,
+                    `/competitions/${competition_id}`
+                ]
+            );
+        }
+
         await logRegistrationAction({
             registration_id,
             actor_user_id: userId,
