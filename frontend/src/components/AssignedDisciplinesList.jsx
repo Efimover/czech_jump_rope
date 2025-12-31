@@ -3,7 +3,7 @@ import api from "../api/apiClient";
 import { AuthContext } from "../context/AuthContext";
 import EditDisciplineModal from "./EditDisciplineModal";
 
-export default function AssignedDisciplinesList({ disciplines, competitionId, onChange }) {
+export default function AssignedDisciplinesList({ disciplines, competitionId, onClose, onChange }) {
     const { user } = useContext(AuthContext);
     const [editing, setEditing] = useState(null);
 
@@ -20,23 +20,21 @@ export default function AssignedDisciplinesList({ disciplines, competitionId, on
                 discipline_id
             });
             onChange();
-        }catch (err) {
+        } catch (err) {
             const code = err.response?.data?.code;
 
             if (code === "DISCIPLINE_IN_USE") {
                 alert("Disciplínu nelze odebrat – existují přihlášky.");
-            } else if (code === "REGISTRATION_OPEN") {
-                alert("Po otevření registrací nelze disciplíny měnit.");
+            } else if (code === "COMPETITION_STARTED") {
+                alert("Po začátku soutěže nelze disciplíny měnit.");
             } else {
                 alert("Nelze odebrat disciplínu.");
             }
         }
-
-
     }
 
     return (
-        <div className="discipline-list">
+        <div className="discipline-list" onClose={onClose}>
             {disciplines.map(d => (
                 <div key={d.discipline_id} className="discipline-row">
                     <div>

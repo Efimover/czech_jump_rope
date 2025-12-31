@@ -21,7 +21,7 @@ export default function AddExistingDisciplineModal({ competitionId, onClose, onA
     }
 
     return (
-        <Modal title="Vyber disciplínu">
+        <Modal title="Vyber disciplínu" onClose={onClose}>
             {all.map(d => (
                 <div key={d.discipline_id} className="select-row">
                     <span>{d.name} ({d.type})</span>

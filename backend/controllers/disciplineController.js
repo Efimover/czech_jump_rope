@@ -287,48 +287,71 @@ export const updateDiscipline = async (req, res) => {
 // Smazat disciplinu z souteze
 export const removeDisciplineFromCompetition = async (req, res) => {
     const { competition_id, discipline_id } = req.body;
-    const regCheck = await pool.query(
+
+    // zjisti vazbu discipline ↔ competition
+    const cdRes = await pool.query(
         `
-            SELECT 1
-            FROM competition
+            SELECT id
+            FROM competition_discipline
             WHERE competition_id = $1
-              AND NOW() >= reg_start
+              AND discipline_id = $2
         `,
-        [competition_id]
+        [competition_id, discipline_id]
     );
 
-    if (regCheck.rowCount > 0) {
-        return res.status(400).json({
-            code: "REGISTRATION_OPEN",
-            error: "Po otevření registrací nelze disciplíny měnit"
+    if (cdRes.rowCount === 0) {
+        return res.status(404).json({
+            error: "Disciplína není přiřazena k této soutěži"
         });
     }
 
+    const competitionDisciplineId = cdRes.rows[0].id;
+
+    // existují přihlášky pro TUTO disciplínu v TÉTO soutěži
     const used = await pool.query(
         `
-        SELECT COUNT(*)::int AS count
+        SELECT 1
         FROM entry e
-                 JOIN registration r ON r.registration_id = e.registration_id
-        WHERE e.discipline_id = $1
+        JOIN registration r ON r.registration_id = e.registration_id
+        WHERE e.competition_discipline_id = $1
           AND r.competition_id = $2
+        LIMIT 1
         `,
-        [discipline_id, competition_id]
+        [competitionDisciplineId, competition_id]
     );
 
-    if (used.rows[0].count > 0) {
+    if (used.rowCount > 0) {
         return res.status(400).json({
             code: "DISCIPLINE_IN_USE",
             error: "Disciplínu nelze odebrat – existují přihlášky"
         });
     }
 
+    // soutěž už začala
+    const started = await pool.query(
+        `
+        SELECT 1
+        FROM competition
+        WHERE competition_id = $1
+          AND NOW() >= start_date
+        `,
+        [competition_id]
+    );
+
+    if (started.rowCount > 0) {
+        return res.status(400).json({
+            code: "COMPETITION_STARTED",
+            error: "Po začátku soutěže nelze disciplíny měnit"
+        });
+    }
+
+    // lze smazat
     await pool.query(
         `
-        DELETE FROM competition_discipline
-        WHERE competition_id = $1
-          AND discipline_id = $2
+            DELETE FROM competition_discipline
+            WHERE id = $1
         `,
-        [competition_id, discipline_id]
+        [competitionDisciplineId]
     );
 
     res.json({ success: true });

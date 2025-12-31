@@ -46,7 +46,7 @@ export default function CompetitionDisciplines({ competitionId }) {
                 {canEdit && (
 
                 <button onClick={() => setShowCreate(true)} className="btn-primary">
-                    ✨ Vytvořit novou disciplínu
+                    Vytvořit novou disciplínu
                 </button>
                 )}
 
