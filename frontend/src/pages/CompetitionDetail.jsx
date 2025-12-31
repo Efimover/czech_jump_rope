@@ -63,14 +63,11 @@ export default function CompetitionDetail() {
 
     async function exportPdf() {
         try {
-            const token = localStorage.getItem("token");
 
             const res = await fetch(
                 `${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/competitions/${id}/export/pdf`,
                 {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                    credentials: "include"
                 }
             );
 

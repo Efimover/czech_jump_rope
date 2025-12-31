@@ -65,17 +65,12 @@ export default function Home() {
         try {
             setSwitchingRole(true);
 
-            const res = await api.put("/users/me/active-role", {
-                role: newRole
-            });
+            await api.put("/users/me/active-role", { role: newRole });
 
-            const updatedUser = {
-                ...user,
-                active_role: res.data.active_role
-            };
+            // znovu načti aktuálního uživatele
+            const me = await api.get("/users/me");
+            window.location.reload(); //
 
-            localStorage.setItem("user", JSON.stringify(updatedUser));
-            window.location.reload(); // jednoduché & spolehlivé
         } catch (err) {
             alert(err.response?.data?.error || "Nepodařilo se přepnout roli");
         } finally {

@@ -2,6 +2,7 @@ import express from "express";
 import {
     registerUser,
     loginUser,
+    logoutUser,
     assignRole,
     getUser,
     getUsers,
@@ -19,6 +20,7 @@ const router = express.Router();
 // Public
 router.post("/register", validateRegister, registerUser);
 router.post("/login", loginUser);
+router.post("/logout", logoutUser);
 
 // 👤 PROFIL PŘIHLÁŠENÉHO UŽIVATELE
 router.get("/me", verifyToken, getMe);

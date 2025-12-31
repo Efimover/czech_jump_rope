@@ -3,7 +3,7 @@ import { AuthContext } from "../context/AuthContext";
 import { GoogleLogin } from "@react-oauth/google";
 import "../styles/auth.css";
 import { useNavigate } from "react-router-dom";
-import api from "../api/apiClient.js";
+
 
 export default function Login() {
     const { login, loginWithGoogle } = useContext(AuthContext);

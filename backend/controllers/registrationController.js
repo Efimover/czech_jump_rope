@@ -1,6 +1,7 @@
 import { pool } from "../db/index.js";
 
 import { logRegistrationAction } from "../services/auditService.js";
+import { pushNotification } from "./notificationController.js";
 
 export const getRegistration = async (req, res) => {
     try {
@@ -275,6 +276,14 @@ export const submitRegistration = async (req, res) => {
                     `/competitions/${competition_id}`
                 ]
             );
+
+            pushNotification(owner_id, {
+                type: "REGISTRATION_SUBMITTED",
+                title: "Nová přihláška",
+                message: `Byla odeslána nová přihláška do soutěže „${name}“.`,
+                link: `/competitions/${competition_id}`
+            });
+
         }
 
         await logRegistrationAction({

@@ -138,8 +138,14 @@ export const loginUser = async (req, res) => {
             { expiresIn: "7d" }
         );
 
+        res.cookie("access_token", token, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 7 * 24 * 60 * 60 * 1000
+        });
+
         res.json({
-            token,
             user: {
                 user_id: user.user_id,
                 email: user.email,
@@ -155,6 +161,19 @@ export const loginUser = async (req, res) => {
         res.status(500).json({ message: "Server error." });
     }
 };
+
+
+// ---------------- LOGOUT ----------------
+export const logoutUser = async (req, res) => {
+    res.clearCookie("access_token", {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax"
+    });
+
+    res.json({ success: true });
+};
+
 
 //Login with Google
 
@@ -250,8 +269,14 @@ export const loginWithGoogle = async (req, res) => {
         { expiresIn: "7d" }
     );
 
+    res.cookie("access_token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 7 * 24 * 60 * 60 * 1000
+    });
+
     res.json({
-        token,
         user: {
             user_id: user.user_id,
             email: user.email,
@@ -698,3 +723,5 @@ export const deleteUserCompletely = async (req, res) => {
         client.release();
     }
 };
+
+

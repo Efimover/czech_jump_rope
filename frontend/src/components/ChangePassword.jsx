@@ -3,6 +3,8 @@ import api from "../api/apiClient";
 import { isValidPassword } from "../utils/validationPassword";
 import "../styles/changePassword.css";
 import {useNavigate} from "react-router-dom";
+import { useContext } from "react";
+import { AuthContext } from "../context/AuthContext";
 
 export default function ChangePassword() {
     const [current, setCurrent] = useState("");
@@ -12,6 +14,7 @@ export default function ChangePassword() {
     const [success, setSuccess] = useState("");
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
+    const { logout } = useContext(AuthContext);
 
     function passwordStrength(pw) {
         let score = 0;
@@ -60,9 +63,9 @@ export default function ChangePassword() {
             setNext("");
             setConfirm("");
 
-            // 🔐 automatický logout po změně hesla
-            setTimeout(() => {
-                localStorage.removeItem("token");
+            // automatický logout po změně hesla
+            setTimeout(async () => {
+                await logout();      // smaže cookie + user state
                 navigate("/login");
             }, 1500);
 

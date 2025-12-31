@@ -1,4 +1,6 @@
 import express from "express";
+import cookieParser from "cookie-parser";
+
 import cors from "cors";
 
 import competitionRoutes from "./routes/competitionRoutes.js";
@@ -15,10 +17,13 @@ import notificationRoutes from "./routes/notificationRoutes.js";
 
 const app = express();
 
-app.use(cors());
+app.use(cors({
+    origin: "http://localhost:5174", // frontend
+    credentials: true
+}));
 app.use(express.json());
 
-
+app.use(cookieParser());
 app.use("/api/users", userRoutes);
 app.use("/api/competitions", competitionRoutes);
 app.use("/api/disciplines", disciplineRoutes);
@@ -40,12 +45,3 @@ export default app;
 
 
 
-// import express from "express";
-//
-// const app = express();
-//
-// app.get("/api/health", (req, res) => {
-//     res.json({ ok: true });
-// });
-//
-// export default app;

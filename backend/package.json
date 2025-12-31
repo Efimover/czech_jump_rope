@@ -16,7 +16,8 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^9.0.0",
     "pdfkit": "^0.17.2",
-    "pg": "^8.11.0"
+    "pg": "^8.11.0",
+    "cookie-parser": "^1.4.6"
   },
   "type": "module"
 }
