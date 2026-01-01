@@ -135,7 +135,7 @@ router.post(
 router.post(
     "/:registration_id/submit",
     verifyToken,
-    requireRole("soutezici", "user"),
+    // requireRole("soutezici", "user"),
     submitRegistration
 );
 

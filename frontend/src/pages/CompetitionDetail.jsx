@@ -105,8 +105,12 @@ export default function CompetitionDetail() {
 
     return (
         <div className="detail-container">
-            <button className="back-btn" onClick={() => navigate(-1)}>
-                ← Zpět
+
+            <button
+                className="back-btn"
+                onClick={() => navigate('/')}
+            >
+                ← Zpět na seznam soutěži
             </button>
 
             <div className="detail-card">

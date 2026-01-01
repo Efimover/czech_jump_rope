@@ -162,9 +162,14 @@ export default function RegistrationDetail() {
     return (
         <div className="reg-wrapper">
 
-            {/* ZPĚT */}
-            <button className="back-btn" onClick={() => navigate(-1)}>
-                ← Zpět
+
+            <button
+                className="back-btn"
+
+                onClick={() => navigate(`/competitions/${registration.competition_id}`)}
+
+            >
+                ← Zpět na detail soutěže
             </button>
 
             {/* HLAVNÍ KARTA */}
@@ -266,10 +271,10 @@ export default function RegistrationDetail() {
                 {/*  GRID  */}
                 {teams.length > 0 && (
                     <DisciplineGrid
-                    registrationId={id}
-                    competitionId={registration.competition_id}
-                    teams={teams}
-                    readOnly={!canEdit}
+                        registrationId={id}
+                        competitionId={registration.competition_id}
+                        teams={teams}
+                        readOnly={!canEdit}
                     />
                 )}
             </div>
