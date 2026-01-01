@@ -297,6 +297,30 @@ export default function RegistrationDetail() {
                 </div>
             )}
 
+            {isOwner && (
+                <button
+                    className="btn-outline"
+                    onClick={async () => {
+                        const res = await fetch(
+                            `${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/registrations/${registration.registration_id}/export/pdf`,
+                            { credentials: "include" }
+                        );
+
+                        const blob = await res.blob();
+                        const url = window.URL.createObjectURL(blob);
+
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `prihlaska_${registration.competition_name}.pdf`;
+                        a.click();
+
+                        window.URL.revokeObjectURL(url);
+                    }}
+                >
+                    📄 Export mé přihlášky (PDF)
+                </button>
+            )}
+
             {canReopen && registration.status === "submitted" && (
                 <button
                     className="btn-warning"

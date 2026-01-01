@@ -9,7 +9,7 @@ import {
     getMyRegistrations,
     getRegistration,
     submitRegistration,
-    deleteRegistration, getRegistrationsByRole, reopenRegistration
+    deleteRegistration, getRegistrationsByRole, reopenRegistration, exportMyRegistrationPdf
 } from "../controllers/registrationController.js";
 
 
@@ -151,4 +151,10 @@ router.delete(
     deleteRegistration
 );
 
+router.get(
+    "/:registration_id/export/pdf",
+    verifyToken,
+    requireRole("user", "soutezici", "admin", "organizator"),
+    exportMyRegistrationPdf
+);
 export default router;

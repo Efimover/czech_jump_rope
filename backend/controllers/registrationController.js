@@ -2,6 +2,7 @@ import { pool } from "../db/index.js";
 
 import { logRegistrationAction } from "../services/auditService.js";
 import { pushNotification } from "./notificationController.js";
+import {generatePdf} from "../pdf/exportPdf.js";
 
 export const getRegistration = async (req, res) => {
     try {
@@ -56,6 +57,81 @@ export const getRegistration = async (req, res) => {
         res.status(500).json({ error: "Server error" });
     }
 };
+
+
+export const exportMyRegistrationPdf = async (req, res) => {
+    const { registration_id } = req.params;
+    const userId = req.user.user_id;
+    const role = req.user.active_role;
+
+    try {
+        // 1️⃣ Načti registraci + soutěž
+        const regRes = await pool.query(
+            `
+            SELECT
+                r.registration_id,
+                r.user_id,
+                r.competition_id,
+                c.name AS competition_name,
+                c.*
+            FROM registration r
+            JOIN competition c ON c.competition_id = r.competition_id
+            WHERE r.registration_id = $1
+            `,
+            [registration_id]
+        );
+
+        if (regRes.rowCount === 0) {
+            return res.status(404).json({ error: "Registrace nenalezena" });
+        }
+
+        const registration = regRes.rows[0];
+
+        // 2️⃣ OPRÁVNĚNÍ
+        if (
+            (role === "user" || role === "soutezici") &&
+            registration.user_id !== userId
+        ) {
+            return res.status(403).json({ error: "Nepovolený přístup" });
+        }
+
+        // 3️⃣ DATA – POUZE TATO REGISTRACE
+        const dataRes = await pool.query(
+            `
+            SELECT
+              t.name AS team_name,
+              a.first_name,
+              a.last_name,
+              a.birth_year,
+              a.gender,
+              d.name AS discipline_name,
+              e.team_group
+            FROM team t
+            JOIN team_athlete ta ON ta.team_id = t.team_id
+            JOIN athlete a ON a.athlete_id = ta.athlete_id
+            LEFT JOIN entry e
+              ON e.athlete_id = a.athlete_id
+            LEFT JOIN discipline d ON d.discipline_id = e.discipline_id
+            WHERE t.registration_id = $1
+            ORDER BY d.name, t.name, a.last_name
+            `,
+            [registration_id]
+        );
+
+        res.setHeader("Content-Type", "application/pdf");
+        res.setHeader(
+            "Content-Disposition",
+            `attachment; filename=prihlaska_${registration.competition_name}.pdf`
+        );
+
+        generatePdf(res, registration, dataRes.rows);
+
+    } catch (err) {
+        console.error("Export registration PDF error:", err);
+        res.status(500).json({ error: "Chyba při generování PDF" });
+    }
+};
+
 
 export const createRegistration = async (req, res) => {
     try {
