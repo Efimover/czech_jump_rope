@@ -4,6 +4,7 @@ import { getCompetition, getCompetitionDisciplines } from "../api/competitionApi
 import { AuthContext } from "../context/AuthContext";
 import { formatDate } from "../utils/date";
 import "../styles/competitionDetail.css";
+import api from "../api/apiClient.js";
 
 export default function CompetitionDetail() {
     const { id } = useParams();
@@ -23,6 +24,12 @@ export default function CompetitionDetail() {
                 setLoading(false);
             })
             .catch(err => {
+                if (err.response?.data?.code === "COMPETITION_DELETED") {
+                    alert("Tato soutěž byla odstraněna.");
+                    navigate("/");
+                    return;
+                }
+
                 console.error("Fetch competition error:", err);
                 setLoading(false);
             });
@@ -30,6 +37,8 @@ export default function CompetitionDetail() {
 
     // 🔹 Načtení disciplín
     useEffect(() => {
+        if (!competition) return;
+
         getCompetitionDisciplines(id)
             .then(data => {
                 setDisciplines(data || []);
@@ -39,7 +48,7 @@ export default function CompetitionDetail() {
                 console.error("Fetch disciplines error:", err);
                 setLoadingDisciplines(false);
             });
-    }, [id]);
+    }, [competition, id]);
 
     if (loading) return <p style={{ textAlign: "center" }}>Načítám soutěž...</p>;
     if (!competition) return <p style={{ textAlign: "center" }}>Soutěž nenalezena.</p>;
@@ -193,6 +202,31 @@ export default function CompetitionDetail() {
                 {canExport && (
                     <button className="btn-outline" onClick={exportPdf}>
                         📄 Export přihlášek (PDF)
+                    </button>
+                )}
+                {canEditCompetition && (
+                    <button
+                        className="btn-danger"
+                        onClick={async () => {
+                            const ok = confirm(
+                                "⚠️ OPRAVDU chcete smazat tuto soutěž?\n\n" +
+                                "Tato akce je nevratná a odstraní soutěž ze systému."
+                            );
+                            if (!ok) return;
+
+                            try {
+                                await api.delete(`/competitions/${competition.competition_id}`);
+                                alert("Soutěž byla smazána");
+                                navigate("/");
+                            } catch (err) {
+                                alert(
+                                    err.response?.data?.error ||
+                                    "Soutěž nelze smazat"
+                                );
+                            }
+                        }}
+                    >
+                        🗑 Smazat soutěž
                     </button>
                 )}
             </div>

@@ -55,7 +55,9 @@ CREATE TABLE competition (
                              created_at     TIMESTAMP WITH TIME ZONE DEFAULT now(),
                              location VARCHAR(255),
                              referee_id BIGINT REFERENCES referee(referee_id) ON DELETE SET NULL,
-                             updated_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+                             updated_at TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                             deleted_at TIMESTAMP NULL,
+                             deleted_by INTEGER NULL REFERENCES user_account(user_id)
 );
 
 CREATE TABLE registration_audit_log (

@@ -71,42 +71,11 @@ router.post(
         }
     }
 );
-
-
-router.get("/:id", async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT
-                c.*,
-                u.first_name AS owner_first_name,
-                u.last_name AS owner_last_name,
-
-                r.referee_id,
-                r.first_name AS referee_first_name,
-                r.last_name AS referee_last_name,
-                r.category AS referee_category
-
-            FROM competition c
-                     JOIN user_account u ON u.user_id = c.owner_id
-                     LEFT JOIN referee r ON r.referee_id = c.referee_id
-            WHERE c.competition_id = $1
-        `, [req.params.id]);
-
-        if (result.rowCount === 0) {
-            return res.status(404).json({ error: "Competition not found" });
-        }
-
-        res.json(result.rows[0]);
-    } catch (err) {
-        console.error("ERROR loading competition:", err);
-        res.status(500).json({ error: "Server error" });
-    }
-});
-
 // ======================================================
 //  DISCIPLÍNY PRO KONKRÉTNÍ SOUTĚŽ
 //  GET /api/competitions/:competition_id/disciplines
 // ======================================================
+
 router.get(
     "/:competition_id/disciplines",
     verifyToken,
@@ -150,6 +119,43 @@ router.get(
     }
 );
 
+
+router.get("/:id", async (req, res) => {
+    try {
+        const result = await pool.query(`
+            SELECT
+                c.*,
+                u.first_name AS owner_first_name,
+                u.last_name AS owner_last_name,
+
+                r.referee_id,
+                r.first_name AS referee_first_name,
+                r.last_name AS referee_last_name,
+                r.category AS referee_category
+
+            FROM competition c
+                     JOIN user_account u ON u.user_id = c.owner_id
+                     LEFT JOIN referee r ON r.referee_id = c.referee_id
+            WHERE c.competition_id = $1 AND deleted_at IS NULL
+        `, [req.params.id]);
+
+        if (result.rowCount === 0) {
+            return res.status(404).json({
+                code: "COMPETITION_DELETED",
+                error: "Soutěž byla odstraněna"
+
+            });
+        }
+
+        res.json(result.rows[0]);
+    } catch (err) {
+        console.error("ERROR loading competition:", err);
+        res.status(500).json({ error: "Server error" });
+    }
+});
+
+
+
 router.get("/", async (req, res) => {
     try {
         const { status, time, discipline } = req.query;
@@ -157,37 +163,40 @@ router.get("/", async (req, res) => {
         const conditions = [];
         const values = [];
         let idx = 1;
+        const baseConditions = ["c.deleted_at IS NULL"];
 
         if (status === "open") {
-            conditions.push(`NOW() BETWEEN c.reg_start AND c.reg_end`);
+            baseConditions.push(`NOW() BETWEEN c.reg_start AND c.reg_end`);
         }
+
+
         if (status === "closed") {
-            conditions.push(`NOW() NOT BETWEEN c.reg_start AND c.reg_end`);
+            baseConditions.push(`NOW() NOT BETWEEN c.reg_start AND c.reg_end`);
         }
 
         if (time === "upcoming") {
-            conditions.push(`c.start_date >= NOW()`);
+            baseConditions.push(`c.start_date >= NOW()`);
         }
         if (time === "past") {
-            conditions.push(`c.end_date < NOW()`);
+            baseConditions.push(`c.end_date < NOW()`);
         }
 
         if (discipline) {
             values.push(`%${discipline.toLowerCase()}%`);
-            conditions.push(`
+            baseConditions.push(`
                 EXISTS (
                     SELECT 1
                     FROM competition_discipline cd
                     JOIN discipline d ON d.discipline_id = cd.discipline_id
                     WHERE cd.competition_id = c.competition_id
-                      AND LOWER(d.name) LIKE $${idx++}
+                      AND LOWER(d.name) LIKE $${idx++} AND c.deleted_at IS NULL
                 )
             `);
         }
 
         const where =
-            conditions.length > 0
-                ? "WHERE " + conditions.join(" AND ")
+            baseConditions.length > 0
+                ? "WHERE " + baseConditions.join(" AND ")
                 : "";
 
         const result = await pool.query(
@@ -239,7 +248,7 @@ router.put(
                         reg_start,
                         reg_end
                     FROM competition
-                    WHERE competition_id = $1
+                    WHERE competition_id = $1 AND deleted_at IS NULL
                 `,
                 [competitionId]
             );
@@ -361,7 +370,7 @@ router.get(
                 `
         SELECT *
         FROM competition
-        WHERE competition_id = $1
+        WHERE competition_id = $1 AND deleted_at IS NULL
           AND (
             owner_id = $2
             OR EXISTS (
@@ -419,6 +428,87 @@ router.get(
         } catch (err) {
             console.error("PDF export error:", err);
             res.status(500).json({ error: "Chyba při generování PDF" });
+        }
+    }
+);
+
+router.delete(
+    "/:id",
+    verifyToken,
+    requireRole("admin", "organizator"),
+    async (req, res) => {
+        const competitionId = req.params.id;
+        const userId = req.user.user_id;
+        const isAdmin = req.user.roles.includes("admin");
+
+        try {
+            // 1️⃣ načti soutěž
+            const compRes = await pool.query(
+                `
+                    SELECT owner_id, deleted_at
+                    FROM competition
+                    WHERE competition_id = $1
+                `,
+                [competitionId]
+            );
+
+            if (compRes.rowCount === 0) {
+                return res.status(404).json({ error: "Soutěž nenalezena" });
+            }
+
+            const competition = compRes.rows[0];
+
+            if (competition.deleted_at) {
+                return res.status(400).json({
+                    error: "Soutěž je již smazána"
+                });
+            }
+
+            // 2️⃣ oprávnění
+            if (!isAdmin && competition.owner_id !== userId) {
+                return res.status(403).json({
+                    error: "Nemáte oprávnění smazat tuto soutěž"
+                });
+            }
+
+            // 3️⃣ kontrola přihlášek
+            const regRes = await pool.query(
+                `
+                SELECT 1
+                FROM registration
+                WHERE competition_id = $1
+                  AND status = 'submitted'
+                LIMIT 1
+                `,
+                [competitionId]
+            );
+
+            if (regRes.rowCount > 0) {
+                return res.status(400).json({
+                    code: "HAS_REGISTRATIONS",
+                    error: "Soutěž nelze smazat – existují odeslané přihlášky"
+                });
+            }
+
+            // 4️⃣ SOFT DELETE
+            await pool.query(
+                `
+                UPDATE competition
+                SET deleted_at = NOW(),
+                    deleted_by = $1
+                WHERE competition_id = $2
+                `,
+                [userId, competitionId]
+            );
+
+            res.json({
+                success: true,
+                message: "Soutěž byla odstraněna"
+            });
+
+        } catch (err) {
+            console.error("Delete competition error:", err);
+            res.status(500).json({ error: "Server error" });
         }
     }
 );
