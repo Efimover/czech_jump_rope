@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import api from "../api/apiClient.js";
 import Modal from "./Modal.jsx";
+import {validateDiscipline} from "../utils/disciplineValidator.js";
 
 export default function CreateDisciplineModal({ competitionId, onClose, onCreated }) {
+
     const [form, setForm] = useState({
         name: "",
         type: "",
@@ -14,7 +16,6 @@ export default function CreateDisciplineModal({ competitionId, onClose, onCreate
     const [categories, setCategories] = useState([]);
     const [errors, setErrors] = useState([]);
 
-    // custom values
     const [customType, setCustomType] = useState("");
     const [useCustomAge, setUseCustomAge] = useState(false);
     const [customAge, setCustomAge] = useState({
@@ -27,19 +28,25 @@ export default function CreateDisciplineModal({ competitionId, onClose, onCreate
         api.get("/age-categories").then(res => setCategories(res.data));
     }, []);
 
-
     async function submit() {
-        if (!validate()) return;
+        const validationErrors = validateDiscipline({
+            form,
+            customType,
+            useCustomAge,
+            customAge
+        });
+
+        if (validationErrors.length > 0) {
+            setErrors(validationErrors);
+            return;
+        }
 
         try {
             let ageCategoryIds = [...form.age_categories];
 
-            // 🔹 vytvoření vlastní věkové kategorie
             if (useCustomAge) {
-                const code = `CUSTOM_${Date.now()}`;
-
                 const res = await api.post("/age-categories", {
-                    code,
+                    code: `CUSTOM_${Date.now()}`,
                     name: customAge.name,
                     min_age: Number(customAge.min_age),
                     max_age:
@@ -51,14 +58,12 @@ export default function CreateDisciplineModal({ competitionId, onClose, onCreate
                 ageCategoryIds = [res.data.age_category_id];
             }
 
-            // 🔹 vytvoření disciplíny
             const disciplineRes = await api.post("/disciplines", {
                 ...form,
                 type: form.type === "other" ? customType : form.type,
                 age_categories: ageCategoryIds
             });
 
-            // 🔹 přiřazení k soutěži
             await api.post("/disciplines/assign", {
                 competition_id: competitionId,
                 discipline_id: disciplineRes.data.discipline_id
@@ -68,7 +73,8 @@ export default function CreateDisciplineModal({ competitionId, onClose, onCreate
             onClose();
         } catch (err) {
             setErrors([
-                err.response?.data?.error || "Nepodařilo se vytvořit disciplínu."
+                err.response?.data?.error ||
+                "Nepodařilo se vytvořit disciplínu."
             ]);
         }
     }

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 import api from "../api/apiClient";
 import Modal from "./Modal.jsx";
+import {validateDiscipline} from "../utils/disciplineValidator.js";
 
 export default function EditDisciplineModal({ discipline, onClose, onSaved }) {
+
     const [form, setForm] = useState({
         name: discipline.name,
         type: discipline.type,
@@ -12,6 +14,13 @@ export default function EditDisciplineModal({ discipline, onClose, onSaved }) {
     });
 
     const [categories, setCategories] = useState([]);
+    const [errors, setErrors] = useState([]);
+    const [customType, setCustomType] = useState(
+        discipline.type &&
+        !["speed", "freestyle", "double_dutch", "chinese_wheel"].includes(discipline.type)
+            ? discipline.type
+            : ""
+    );
 
     useEffect(() => {
         api.get("/age-categories").then(res => {
@@ -26,14 +35,36 @@ export default function EditDisciplineModal({ discipline, onClose, onSaved }) {
     }, []);
 
     async function save() {
-        await api.put(
-            `/disciplines/competition/${discipline.competition_discipline_id}`, {
-                ...form,
-                pocet_athletes: form.is_team ? form.pocet_athletes : null
-            });
+        const validationErrors = validateDiscipline({
+            form,
+            customType
+        });
 
-        onSaved();
+        if (validationErrors.length > 0) {
+            setErrors(validationErrors);
+            return;
+        }
+
+        try {
+            await api.put(
+                `/disciplines/competition/${discipline.competition_discipline_id}`,
+                {
+                    ...form,
+                    type: form.type === "other" ? customType : form.type,
+                    pocet_athletes: form.is_team ? form.pocet_athletes : null
+                }
+            );
+
+            onSaved();
+            onClose();
+        } catch (err) {
+            setErrors([
+                err.response?.data?.error ||
+                "Nepodařilo se uložit změny disciplíny"
+            ]);
+        }
     }
+
     if (discipline.locked) {
         return (
             <Modal>
@@ -44,6 +75,15 @@ export default function EditDisciplineModal({ discipline, onClose, onSaved }) {
 
     return (
         <Modal title="Upravit disciplínu" onClose={onClose}>
+            {errors.length > 0 && (
+                <div className="error-box">
+                    <ul>
+                        {errors.map((e, i) => (
+                            <li key={i}>{e}</li>
+                        ))}
+                    </ul>
+                </div>
+            )}
             <div className="discipline-form">
 
                 <div className="form-group">
@@ -155,7 +195,11 @@ export default function EditDisciplineModal({ discipline, onClose, onSaved }) {
                 </div>
 
                 <div className="form-actions">
-                    <button className="btn-primary" onClick={save}>
+                    <button
+                        className="btn-primary"
+                        onClick={save}
+
+                    >
                         💾 Uložit změny
                     </button>
                 </div>

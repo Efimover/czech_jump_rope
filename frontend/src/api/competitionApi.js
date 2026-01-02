@@ -2,6 +2,8 @@ import api from "./apiClient.js";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
+// const API_URL = import.meta.env.VITE_API_URL;
+
 export async function getCompetitions() {
     const res = await fetch(`${API_URL}/competitions`);
     return res.json();

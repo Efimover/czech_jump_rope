@@ -302,6 +302,8 @@ export default function RegistrationDetail() {
                     className="btn-outline"
                     onClick={async () => {
                         const res = await fetch(
+                            // `${import.meta.env.VITE_API_URL}/registrations/${registration.registration_id}/export/pdf`,
+
                             `${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/registrations/${registration.registration_id}/export/pdf`,
                             { credentials: "include" }
                         );

@@ -3,6 +3,7 @@ import { pool } from "../db/index.js";
 import { verifyToken } from "../middleware/authMiddleware.js";
 import { requireRole } from "../middleware/roleMiddleware.js";
 import {generatePdf} from "../pdf/exportPdf.js";
+import { logCompetitionAction } from "../services/competitionAuditService.js";
 
 const router = express.Router();
 
@@ -24,50 +25,90 @@ router.post(
                 referee_id
             } = req.body;
 
-            const owner_id = req.user.user_id; // z tokenu
+            // 1️⃣ Normalizace prázdných hodnot
+            const normalizeDate = (v) =>
+                v === "" || v === undefined ? null : v;
+
+            const startDate = normalizeDate(start_date);
+            const endDate   = normalizeDate(end_date);
+            const regStart  = normalizeDate(reg_start);
+            const regEnd    = normalizeDate(reg_end);
+
+            // 2️⃣ VALIDACE POVINNÝCH POLÍ (⬅️ SEM PATŘÍ)
+            if (!name || !startDate || !endDate || !regStart || !regEnd) {
+                return res.status(400).json({
+                    error: "Vyplňte název soutěže a všechna povinná data"
+                });
+            }
+
+            if (new Date(regStart) > new Date(regEnd)) {
+                return res.status(400).json({
+                    error: "Registrace nemůže končit dříve než začne"
+                });
+            }
+
+            if (new Date(startDate) > new Date(endDate)) {
+                return res.status(400).json({
+                    error: "Konec soutěže nemůže být dříve než začátek"
+                });
+            }
+
+            if (new Date(regStart) > new Date(startDate)) {
+                return res.status(400).json({
+                    error: "Start registrace nesmí být pozdějí než start soutěží"
+                });
+            }
+
+            // 3️⃣ Rozhodčí – validace
+            const owner_id = req.user.user_id;
+
             if (referee_id) {
                 const ref = await pool.query(
                     "SELECT 1 FROM referee WHERE referee_id = $1",
                     [referee_id]
                 );
                 if (ref.rowCount === 0) {
-                    return res.status(400).json({ error: "Neplatný rozhodčí" });
+                    return res.status(400).json({
+                        error: "Neplatný rozhodčí"
+                    });
                 }
             }
 
             const refereeId = referee_id ?? null;
 
+            // 4️⃣ INSERT
             const result = await pool.query(
                 `
-  INSERT INTO competition (
-      owner_id, name, description,
-      start_date, end_date,
-      reg_start, reg_end,
-      location, referee_id
-  )
-  VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
-  RETURNING *
-  `,
+                INSERT INTO competition (
+                    owner_id, name, description,
+                    start_date, end_date,
+                    reg_start, reg_end,
+                    location, referee_id
+                )
+                VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
+                RETURNING *
+                `,
                 [
                     owner_id,
                     name,
                     description,
-                    start_date,
-                    end_date,
-                    reg_start,
-                    reg_end,
+                    startDate,
+                    endDate,
+                    regStart,
+                    regEnd,
                     location,
                     refereeId
                 ]
             );
 
-            return res.status(201).json({
+            res.status(201).json({
                 message: "Competition created",
                 competition: result.rows[0]
             });
+
         } catch (err) {
             console.error("ERROR saving competition:", err);
-            return res.status(500).json({ error: "Database error" });
+            res.status(500).json({ error: "Database error" });
         }
     }
 );
@@ -490,7 +531,7 @@ router.delete(
                 });
             }
 
-            // 4️⃣ SOFT DELETE
+            // 4️Soft delete
             await pool.query(
                 `
                 UPDATE competition
@@ -501,6 +542,15 @@ router.delete(
                 [userId, competitionId]
             );
 
+            // Audit log
+            await logCompetitionAction({
+                competition_id: competitionId,
+                actor_user_id: userId,
+                actor_role: req.user.active_role,
+                action: "DELETE",
+                message: `Soutěž byla smazána uživatelem ${req.user.active_role}`
+            });
+
             res.json({
                 success: true,
                 message: "Soutěž byla odstraněna"
@@ -510,6 +560,34 @@ router.delete(
             console.error("Delete competition error:", err);
             res.status(500).json({ error: "Server error" });
         }
+    }
+);
+
+router.get(
+    "/:id/audit-log",
+    verifyToken,
+    requireRole("admin", "organizator"),
+    async (req, res) => {
+        const { id } = req.params;
+
+        const result = await pool.query(
+            `
+            SELECT
+                ca.audit_id,
+                ca.action,
+                ca.actor_role,
+                ca.message,
+                ca.created_at,
+                u.email AS actor_email
+            FROM competition_audit ca
+            JOIN user_account u ON u.user_id = ca.actor_user_id
+            WHERE ca.competition_id = $1
+            ORDER BY ca.created_at DESC
+            `,
+            [id]
+        );
+
+        res.json(result.rows);
     }
 );
 

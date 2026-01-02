@@ -74,6 +74,7 @@ export default function CompetitionDetail() {
         try {
 
             const res = await fetch(
+                // `${import.meta.env.VITE_API_URL}/competitions/${id}/export/pdf`,
                 `${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/competitions/${id}/export/pdf`,
                 {
                     credentials: "include"

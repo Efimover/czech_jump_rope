@@ -1,0 +1,191 @@
+/* ========================= */
+/*  PAGE LAYOUT              */
+/* ========================= */
+
+.admin-page {
+    max-width: 1400px;
+    margin: 40px auto;
+    padding: 0 20px;
+}
+
+.admin-page h1 {
+    font-size: 26px;
+    margin-bottom: 20px;
+    font-weight: 700;
+}
+
+/* ========================= */
+/*  TABLE                    */
+/* ========================= */
+
+.audit-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: #fff;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 14px rgba(0,0,0,0.06);
+}
+
+.audit-table thead {
+    background: #f4f6f8;
+}
+
+.audit-table th {
+    text-align: left;
+    padding: 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    color: #555;
+    white-space: nowrap;
+}
+
+.audit-table td {
+    padding: 12px;
+    border-top: 1px solid #eee;
+    font-size: 14px;
+    vertical-align: top;
+}
+
+/* ========================= */
+/*  ROW STATES               */
+/* ========================= */
+
+.audit-table tbody tr:hover {
+    background: #fafafa;
+}
+
+/* ========================= */
+/*  ACTION HIGHLIGHT         */
+/* ========================= */
+
+.audit-table td strong {
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+}
+
+
+/* ========================= */
+/*  LINKS                    */
+/* ========================= */
+
+.audit-table a {
+    color: #1565c0;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.audit-table a:hover {
+    text-decoration: underline;
+}
+
+/* ========================= */
+/*  ROLE BADGES              */
+/* ========================= */
+
+.audit-table td:nth-child(6) {
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+
+/* ROLES */
+.role-admin {
+    color: #c62828;
+    font-weight: 700;
+}
+
+.role-organizator {
+    color: #1565c0;
+    font-weight: 700;
+}
+
+.role-user,
+.role-soutezici {
+    color: #2e7d32;
+    font-weight: 700;
+}
+
+/* ACTIONS */
+.action-create {
+    background: #e8f5e9;
+    color: #2e7d32;
+}
+
+.action-update {
+    background: #fff8e1;
+    color: #f57f17;
+}
+
+.action-delete {
+    background: #ffebee;
+    color: #c62828;
+}
+
+.action {
+    padding: 4px 8px;
+    border-radius: 6px;
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+/* ========================= */
+/*  MESSAGE                  */
+/* ========================= */
+
+.audit-table td:last-child {
+    color: #444;
+    font-size: 13px;
+}
+
+/* ========================= */
+/*  EMPTY / LOADING          */
+/* ========================= */
+
+.admin-page p {
+    color: #666;
+    font-size: 15px;
+}
+
+/* ========================= */
+/*  RESPONSIVE               */
+/* ========================= */
+
+@media (max-width: 1000px) {
+    .audit-table thead {
+        display: none;
+    }
+
+    .audit-table,
+    .audit-table tbody,
+    .audit-table tr,
+    .audit-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .audit-table tr {
+        margin-bottom: 15px;
+        border: 1px solid #eee;
+        border-radius: 8px;
+        padding: 10px;
+    }
+
+    .audit-table td {
+        border: none;
+        padding: 6px 0;
+    }
+
+    .audit-table td::before {
+        content: attr(data-label);
+        display: block;
+        font-size: 12px;
+        color: #777;
+        text-transform: uppercase;
+        margin-bottom: 2px;
+    }
+}

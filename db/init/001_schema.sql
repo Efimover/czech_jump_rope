@@ -205,6 +205,26 @@ CREATE TABLE notification (
 
                               is_read BOOLEAN NOT NULL DEFAULT FALSE,
                               created_at TIMESTAMP WITH TIME ZONE DEFAULT now()
+
+
+);
+
+
+CREATE TABLE competition_audit (
+                                   audit_id SERIAL PRIMARY KEY,
+
+                                   competition_id INT NOT NULL,
+                                   action TEXT NOT NULL,            -- DELETE, RESTORE, UPDATE, CREATE
+                                   actor_user_id INT NOT NULL,
+                                   actor_role TEXT NOT NULL,
+
+                                   message TEXT,
+                                   created_at TIMESTAMP DEFAULT NOW(),
+
+                                   CONSTRAINT fk_comp_audit_comp
+                                       FOREIGN KEY (competition_id)
+                                           REFERENCES competition(competition_id)
+                                           ON DELETE CASCADE
 );
 
 -- Pokud je event.team_event = FALSE, pak team_group a team_id by měly být NULL.

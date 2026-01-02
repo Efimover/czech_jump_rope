@@ -177,6 +177,15 @@ export default function Home() {
                         </button>
                     )}
 
+                    {canManageUsers && (
+                        <button
+                            className="btn-outline"
+                            onClick={() => navigate("/admin/audit")}
+                        >
+                            📜 Přehled změn
+                        </button>
+                    )}
+
                 </div>
             )}
 

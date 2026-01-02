@@ -15,6 +15,9 @@ import refereeRoutes from "./routes/refereeRoutes.js";
 import auditLogRoutes from "./routes/auditLogRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 
+import adminAuditRoutes from "./routes/adminAuditRoutes.js";
+
+
 const app = express();
 
 app.use(cors({
@@ -35,6 +38,7 @@ app.use("/api/entries", entryRoutes);
 app.use("/api/referees", refereeRoutes);
 app.use("/api/registrations", auditLogRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/admin", adminAuditRoutes);
 
 app.use((err, req, res, next) => {
     console.error("🔥 UNHANDLED ERROR:", err);

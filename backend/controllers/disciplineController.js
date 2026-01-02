@@ -212,6 +212,19 @@ export const updateDiscipline = async (req, res) => {
     const { competitionDisciplineId } = req.params;
     const { name, pocet_athletes, is_team, type, age_categories } = req.body;
 
+    if (
+        !name ||
+        !type ||
+        is_team === undefined ||
+        (is_team && (!pocet_athletes || pocet_athletes < 2)) ||
+        !Array.isArray(age_categories) ||
+        age_categories.length === 0
+    ) {
+        return res.status(400).json({
+            error: "Vyplňte všechna povinná pole disciplíny"
+        });
+    }
+
     // competition_id + discipline_id
     const cdRes = await pool.query(
         `
