@@ -88,7 +88,10 @@ export default function AdminUsers() {
                         <td>
                             <button
                                 className="btn-outline"
-                                onClick={() => setSelectedUser({ ...u, mode: "edit" })}
+                                onClick={() => {
+                                    setSelectedUser(u);
+                                    setMode("edit");
+                                }}
                             >
                                 ⚙️ Upravit
                             </button>
@@ -96,7 +99,10 @@ export default function AdminUsers() {
                         <td>
                             <button
                                 className="btn-danger"
-                                onClick={() => setSelectedUser({ ...u, mode: "delete" })}
+                                onClick={() => {
+                                    setSelectedUser(u);
+                                    setMode("delete");
+                                }}
                             >
                                 🗑 Smazat
                             </button>
