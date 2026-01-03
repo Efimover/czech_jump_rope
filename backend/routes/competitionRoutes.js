@@ -34,7 +34,7 @@ router.post(
             const regStart  = normalizeDate(reg_start);
             const regEnd    = normalizeDate(reg_end);
 
-            // 2️⃣ VALIDACE POVINNÝCH POLÍ (⬅️ SEM PATŘÍ)
+            // 2️VaLIDACE POVINNÝCH POLÍ
             if (!name || !startDate || !endDate || !regStart || !regEnd) {
                 return res.status(400).json({
                     error: "Vyplňte název soutěže a všechna povinná data"
@@ -325,6 +325,36 @@ router.put(
                 !sameDate(existing.end_date, end_date) ||
                 !sameDate(existing.reg_start, reg_start) ||
                 !sameDate(existing.reg_end, reg_end);
+
+
+            /* =====================================================
+               3️Validace logiky dat
+               ========================================= */
+            const dStart = new Date(start_date);
+            const dEnd = new Date(end_date);
+            const rStart = new Date(reg_start);
+            const rEnd = new Date(reg_end);
+
+            if (rEnd < rStart) {
+                return res.status(400).json({
+                    code: "INVALID_REGISTRATION_DATES",
+                    error: "Registrace nemůže končit dříve než začne"
+                });
+            }
+
+            if (dEnd < dStart) {
+                return res.status(400).json({
+                    code: "INVALID_COMPETITION_DATES",
+                    error: "Konec soutěže nemůže být dříve než začátek"
+                });
+            }
+
+            if (rStart > dStart) {
+                return res.status(400).json({
+                    code: "REGISTRATION_AFTER_START",
+                    error: "Start registrace nesmí být později než start soutěže"
+                });
+            }
 
             /* =====================================================
                4️⃣ Blokace změny termínů po otevření registrace

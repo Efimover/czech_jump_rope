@@ -16,11 +16,8 @@ export default function CompetitionEdit() {
     const [form, setForm] = useState(null);
     const [referees, setReferees] = useState([]);
     const [saving, setSaving] = useState(false);
+    const [errors, setErrors] = useState({});
 
-    // const isRegistrationOpen =
-    //     form &&
-    //     new Date(form.reg_start) <= new Date() &&
-    //     new Date() <= new Date(form.reg_end);
 
     // 🔹 načti soutěž + rozhodčí
     useEffect(() => {
@@ -51,23 +48,64 @@ export default function CompetitionEdit() {
         load();
     }, [competitionId]);
 
+    const backendErrorMap = {
+        INVALID_REGISTRATION_DATES: {
+            field: "reg_end",
+            message: "Registrace nemůže končit dříve než začne"
+        },
+        INVALID_COMPETITION_DATES: {
+            field: "end_date",
+            message: "Konec soutěže nemůže být dříve než začátek"
+        },
+        REGISTRATION_AFTER_START: {
+            field: "reg_start",
+            message: "Registrace musí začít nejpozději v den začátku soutěže"
+        },
+        REGISTRATION_OPEN: {
+            field: "reg_start",
+            message: "Po otevření registrace nelze měnit termíny"
+        }
+    };
+
     if (!form) return <p>Načítám…</p>;
 
     // 🔹 uložení změn
     async function save() {
         try {
             setSaving(true);
+            setErrors({});
+
             await updateCompetition(competitionId, form);
             navigate(`/competitions/${competitionId}`);
         } catch (err) {
-            console.error("Save competition error:", err);
-            alert(
-                err.response?.data?.error ||
-                "Nepodařilo se uložit změny"
-            );
+            const code = err.response?.data?.code;
+
+            if (code && backendErrorMap[code]) {
+                const { field, message } = backendErrorMap[code];
+                setErrors({ [field]: message });
+            } else {
+                setErrors({
+                    global:
+                        err.response?.data?.error ||
+                        "Nepodařilo se uložit změny"
+                });
+            }
         } finally {
             setSaving(false);
         }
+    }
+
+    function bind(name) {
+        return {
+            value: form[name],
+            className: errors[name] ? "input-error" : "",
+            onChange: e => {
+                setForm({ ...form, [name]: e.target.value });
+                if (errors[name]) {
+                    setErrors(prev => ({ ...prev, [name]: null }));
+                }
+            }
+        };
     }
 
     return (
@@ -98,48 +136,25 @@ export default function CompetitionEdit() {
                 />
 
                 <label>Datum konání</label>
-                {/*{isRegistrationOpen && (*/}
-                {/*    <p className="info-box">*/}
-                {/*        🔒 Registrace je otevřená – termíny nelze měnit.*/}
-                {/*    </p>*/}
-                {/*)}*/}
 
-                <input
-                    type="date"
-                    value={form.start_date}
-                    // disabled={isRegistrationOpen}
+                <input type="date" {...bind("start_date")} />
 
-                    onChange={e =>
-                        setForm({ ...form, start_date: e.target.value })
-                    }
-                />
-                <input
-                    type="date"
-                    value={form.end_date}
-                    // disabled={isRegistrationOpen}
-                    onChange={e =>
-                        setForm({ ...form, end_date: e.target.value })
-                    }
-                />
+                <input type="date" {...bind("end_date")} />
+                {errors.end_date && (
+                    <p className="error-text">{errors.end_date}</p>
+                )}
 
                 <label>Registrace</label>
-                <input
-                    type="date"
-                    value={form.reg_start}
-                    // disabled={isRegistrationOpen}
 
-                    onChange={e =>
-                        setForm({ ...form, reg_start: e.target.value })
-                    }
-                />
-                <input
-                    type="date"
-                    value={form.reg_end}
-                    // disabled={isRegistrationOpen}
-                    onChange={e =>
-                        setForm({ ...form, reg_end: e.target.value })
-                    }
-                />
+                <input type="date" {...bind("reg_start")} />
+                {errors.reg_start && (
+                    <p className="error-text">{errors.reg_start}</p>
+                )}
+
+                <input type="date" {...bind("reg_end")} />
+                {errors.reg_end && (
+                    <p className="error-text">{errors.reg_end}</p>
+                )}
 
                 <label>Rozhodčí</label>
                 <select
