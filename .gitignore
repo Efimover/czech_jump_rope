@@ -13,7 +13,7 @@ out/
 coverage/
 
 # === Prostředí ===
-.env
+
 .env.local
 .env.*.local
 
