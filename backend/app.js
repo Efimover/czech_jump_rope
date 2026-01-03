@@ -21,7 +21,8 @@ import adminAuditRoutes from "./routes/adminAuditRoutes.js";
 const app = express();
 
 app.use(cors({
-    origin: "http://localhost:5174", // frontend
+    origin: true,
+    // origin: "http://localhost:5174", // frontend
     credentials: true
 }));
 app.use(express.json());

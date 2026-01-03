@@ -1,20 +1,19 @@
 import api from "./apiClient.js";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
-
-// const API_URL = import.meta.env.VITE_API_URL;
+// const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3001/api";
 
 export async function getCompetitions() {
-    const res = await fetch(`${API_URL}/competitions`);
+    const res = await fetch("/api/competitions");
     return res.json();
 }
 
 export async function getCompetition(id) {
-    const res = await fetch(`${API_URL}/competitions/${id}`);
+    const res = await fetch(`/api/competitions/${id}`);
     return res.json();
 }
+
 export async function getCompetitionDisciplines(competitionId) {
-    const res = await fetch(`${API_URL}/disciplines/competition/${competitionId}`);
+    const res = await fetch(`/api/disciplines/competition/${competitionId}`);
     return res.json();
 }
 

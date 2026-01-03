@@ -41,6 +41,14 @@ CREATE TABLE "role_user" (
                              UNIQUE (role_id, user_id)
 );
 
+-- rozhodčí připojení k přihlášce (může být více)
+CREATE TABLE referee (
+                         referee_id   BIGSERIAL PRIMARY KEY,
+                         first_name   VARCHAR(100) NOT NULL,
+                         last_name    VARCHAR(100) NOT NULL,
+                         category     VARCHAR(100)
+);
+
 -- ===== soutěže, události a disciplíny =====
 CREATE TABLE competition (
                              competition_id BIGSERIAL PRIMARY KEY,
@@ -59,6 +67,20 @@ CREATE TABLE competition (
                              deleted_at TIMESTAMP NULL,
                              deleted_by INTEGER NULL REFERENCES user_account(user_id)
 );
+
+-- ===== přihlášky =====
+CREATE TABLE registration (
+                              registration_id BIGSERIAL PRIMARY KEY,
+                              competition_id  BIGINT NOT NULL REFERENCES competition(competition_id) ON DELETE CASCADE,
+                              user_id         BIGINT NOT NULL REFERENCES user_account(user_id) ON DELETE CASCADE, -- kdo přihlášku vytvořil (zástupce týmu)
+                              status          registration_status NOT NULL DEFAULT 'saved',
+                              contact_name    VARCHAR(200),
+                              contact_email   VARCHAR(255),
+                              created_at      TIMESTAMP WITH TIME ZONE DEFAULT now(),
+                              updated_at      TIMESTAMP WITH TIME ZONE DEFAULT now()
+);
+
+
 
 CREATE TABLE registration_audit_log (
                                         audit_id SERIAL PRIMARY KEY,
@@ -120,25 +142,8 @@ CREATE TABLE competition_discipline (
                                   pocet_athletes INT
 );
 
--- ===== přihlášky =====
-CREATE TABLE registration (
-                              registration_id BIGSERIAL PRIMARY KEY,
-                              competition_id  BIGINT NOT NULL REFERENCES competition(competition_id) ON DELETE CASCADE,
-                              user_id         BIGINT NOT NULL REFERENCES user_account(user_id) ON DELETE CASCADE, -- kdo přihlášku vytvořil (zástupce týmu)
-                              status          registration_status NOT NULL DEFAULT 'saved',
-                              contact_name    VARCHAR(200),
-                              contact_email   VARCHAR(255),
-                              created_at      TIMESTAMP WITH TIME ZONE DEFAULT now(),
-                              updated_at      TIMESTAMP WITH TIME ZONE DEFAULT now()
-);
 
--- rozhodčí připojení k přihlášce (může být více)
-CREATE TABLE referee (
-                         referee_id   BIGSERIAL PRIMARY KEY,
-                         first_name   VARCHAR(100) NOT NULL,
-                         last_name    VARCHAR(100) NOT NULL,
-                         category     VARCHAR(100)
-);
+
 
 CREATE TABLE registration_referee (
                                       registration_referee_id BIGSERIAL PRIMARY KEY,

@@ -75,8 +75,7 @@ export default function CompetitionDetail() {
 
             const res = await fetch(
                 // `${import.meta.env.VITE_API_URL}/competitions/${id}/export/pdf`,
-                `${import.meta.env.VITE_API_URL || "http://localhost:3001/api"}/competitions/${id}/export/pdf`,
-                {
+                `/api/competitions/${id}/export/pdf`,                {
                     credentials: "include"
                 }
             );
@@ -175,65 +174,83 @@ export default function CompetitionDetail() {
                     </ul>
                 )}
 
-                {/* 🔹 Tlačítko pro registraci */}
-                <div className="competition-actions">
-                    {!user ? (
-                        <button
-                            className="nav-btn"
-                            onClick={() => navigate("/login")}
-                        >
-                            Přihlásit se pro registraci
-                        </button>
-                    ) : (
-                        <button
-                            className="hero-button"
-                            onClick={() => navigate(`/registrations/start?competition=${competition.competition_id}`)}
+                {/* 🔹 AKCE */}
+                <div className="detail-actions">
 
-                        >
-                            Přihlásit se do soutěže
-                        </button>
+                    {/* ⭐ Primární akce */}
+                    <div className="primary-actions">
+                        {!user ? (
+                            <button
+                                className="btn-outline"
+                                onClick={() => navigate("/login")}
+                            >
+                                Přihlásit se pro registraci
+                            </button>
+                        ) : (
+                            <button
+                                className="hero-button"
+                                onClick={() =>
+                                    navigate(
+                                        `/registrations/start?competition=${competition.competition_id}`
+                                    )
+                                }
+                            >
+                                Přihlásit se do soutěže
+                            </button>
+                        )}
+                    </div>
+
+                    {/* ⚙ Admin / organizátor akce */}
+                    {(canEditCompetition || canExport) && (
+                        <div className="admin-actions">
+                            {canEditCompetition && (
+                                <button
+                                    className="edit-btn"
+                                    onClick={() => navigate(`/competitions/${id}/edit`)}
+                                >
+                                    ⚙ Správa soutěže
+                                </button>
+                            )}
+
+                            {canExport && (
+                                <button className="btn-outline" onClick={exportPdf}>
+                                    📄 Export přihlášek (PDF)
+                                </button>
+                            )}
+                        </div>
+                    )}
+
+                    {/* 🗑 Nebezpečná akce */}
+                    {canEditCompetition && (
+                        <div className="danger-actions">
+                            <button
+                                className="btn-danger"
+                                onClick={async () => {
+                                    const ok = confirm(
+                                        "⚠️ OPRAVDU chcete smazat tuto soutěž?\n\n" +
+                                        "Tato akce je nevratná a odstraní soutěž ze systému."
+                                    );
+                                    if (!ok) return;
+
+                                    try {
+                                        await api.delete(
+                                            `/competitions/${competition.competition_id}`
+                                        );
+                                        alert("Soutěž byla smazána");
+                                        navigate("/");
+                                    } catch (err) {
+                                        alert(
+                                            err.response?.data?.error ||
+                                            "Soutěž nelze smazat"
+                                        );
+                                    }
+                                }}
+                            >
+                                🗑 Smazat soutěž
+                            </button>
+                        </div>
                     )}
                 </div>
-
-                {canEditCompetition && (
-                    <button
-                        className="edit-btn"
-                        onClick={() => navigate(`/competitions/${id}/edit`)}
-                    >
-                        ⚙ Správa soutěže
-                    </button>
-                )}
-
-                {canExport && (
-                    <button className="btn-outline" onClick={exportPdf}>
-                        📄 Export přihlášek (PDF)
-                    </button>
-                )}
-                {canEditCompetition && (
-                    <button
-                        className="btn-danger"
-                        onClick={async () => {
-                            const ok = confirm(
-                                "⚠️ OPRAVDU chcete smazat tuto soutěž?\n\n" +
-                                "Tato akce je nevratná a odstraní soutěž ze systému."
-                            );
-                            if (!ok) return;
-
-                            try {
-                                await api.delete(`/competitions/${competition.competition_id}`);
-                                alert("Soutěž byla smazána");
-                                navigate("/");
-                            } catch (err) {
-                                alert(
-                                    err.response?.data?.error ||
-                                    "Soutěž nelze smazat"
-                                );
-                            }
-                        }}
-                    >
-                        🗑 Smazat soutěž
-                    </button>
-                )}
             </div>
         </div>
     );

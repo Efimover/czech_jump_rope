@@ -2,20 +2,18 @@ services:
   backend:
     build: ./backend
     container_name: cjr-backend
-    ports:
-      - "3001:3000"
     env_file:
       - ./backend/.env
     depends_on:
       - db
 
-  frontend:
+  nginx:
     build: ./frontend
-    container_name: cjr-frontend
+    container_name: cjr-nginx
     ports:
-      - "5174:5173"
-#    environment:
-#      - VITE_API_URL=http://cjr-backend:3001/api
+      - "80:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
     depends_on:
       - backend
 

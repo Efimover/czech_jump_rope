@@ -14,7 +14,9 @@ export default function NotificationBell() {
         loadUnread();
 
         const es = new EventSource(
-            `${import.meta.env.VITE_API_URL}/notifications/stream`,
+            // `${import.meta.env.VITE_API_URL}/notifications/stream`,
+            `/api/notifications/stream`,
+
             { withCredentials: true }
         );
 
