@@ -99,6 +99,14 @@ export default function DisciplineGrid({
         <div className="discipline-grid-wrapper">
             <h2>Disciplíny</h2>
 
+            <p className="discipline-description">
+                <strong>Individuální závodní disciplíny</strong> ⇒ označte křížkem disciplínu,
+                které se závodník účastní.
+                <br/>
+                <strong>Týmové závodní disciplíny</strong> ⇒ označte stejným číslem závodníky
+                jednoho týmu.
+            </p>
+
             <table className="discipline-grid">
                 <thead>
                 <tr>

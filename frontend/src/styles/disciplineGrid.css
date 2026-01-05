@@ -2,7 +2,12 @@
     width: 100%;
     border-collapse: collapse;
 }
-
+.discipline-description {
+    font-size: 0.9rem;
+    color: #555;
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
 .discipline-grid th,
 .discipline-grid td {
     border: 1px solid #ccc;
@@ -22,3 +27,5 @@
 .grid-cell.error {
     background-color: #ffcccc;
 }
+
+
