@@ -173,7 +173,7 @@ export default function Home() {
                             className="btn-outline"
                             onClick={() => navigate("/admin")}
                         >
-                            🗂 Všechny uživatele
+                            🗂 Všichni uživatelé
                         </button>
                     )}
 
