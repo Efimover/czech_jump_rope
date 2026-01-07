@@ -6,7 +6,7 @@ export const verifyToken = async (req, res, next) => {
     try {
         let token = req.cookies?.access_token;
 
-        // fallback pro REST (pokud bys chtěla zachovat header)
+        // fallback pro REST
         if (!token && req.headers.authorization?.startsWith("Bearer ")) {
             token = req.headers.authorization.split(" ")[1];
         }

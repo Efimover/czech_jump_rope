@@ -1,13 +1,33 @@
 import PDFDocument from "pdfkit";
 import path from "path";
+import { fileURLToPath } from "url";
+
 import { drawHeader } from "./header.js";
 import { drawTableHeader, drawRow } from "./table.js";
+
+// ESM náhrada za __dirname
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export function generatePdf(res, competition, rows) {
     const doc = new PDFDocument({ margin: 40, size: "A4" });
 
-    doc.font(path.resolve("assets/fonts/Roboto-Regular.ttf"));
-    doc.registerFont("Roboto-Bold", path.resolve("assets/fonts/Roboto-Bold.ttf"));
+    const fontRegular = path.join(
+        __dirname,
+        "../assets/fonts/Roboto-Regular.ttf"
+    );
+
+    const fontBold = path.join(
+        __dirname,
+        "../assets/fonts/Roboto-Bold.ttf"
+    );
+
+    // registrace fontů
+    doc.registerFont("Roboto-Regular", fontRegular);
+    doc.registerFont("Roboto-Bold", fontBold);
+
+    // ⬇️ defaultní font
+    doc.font("Roboto-Regular");
 
     doc.pipe(res);
 
@@ -22,7 +42,10 @@ export function generatePdf(res, competition, rows) {
     for (const [discipline, data] of Object.entries(grouped)) {
         doc.addPage();
 
-        doc.font("Roboto-Bold").fontSize(15).text(`Disciplína: ${discipline}`);
+        doc.font("Roboto-Bold")
+            .fontSize(15)
+            .text(`Disciplína: ${discipline}`);
+
         let y = drawTableHeader(doc, doc.y + 10);
 
         let odd = false;
